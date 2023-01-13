@@ -1,0 +1,5 @@
+target/
+debug/
+.DS_Store
+.env
+sample_query
