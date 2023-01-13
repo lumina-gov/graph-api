@@ -19,8 +19,8 @@ diesel::table! {
 diesel::table! {
     courses (id) {
         id -> Uuid,
-        created_at -> Nullable<Timestamptz>,
-        name -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+        name -> Varchar,
     }
 }
 

@@ -61,7 +61,7 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let schema = Arc::new(resolvers::create_schema());
-    let context = Arc::new(graph::context::create_context());
+    let context = Arc::new(graph::context::create_context().await?);
 
     run(service_fn(|event: Request| {
         let schema = schema.clone();

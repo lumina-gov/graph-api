@@ -1,3 +1,2 @@
-
-pub mod utils;
-pub mod post;
+pub mod course;
+pub mod schema;

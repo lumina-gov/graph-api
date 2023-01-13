@@ -1,8 +1,6 @@
 use juniper::{GraphQLInputObject, GraphQLObject};
 use serde::{Serialize, Deserialize};
 
-use super::utils::model::Model;
-
 #[derive(GraphQLObject, Serialize, Deserialize)]
 #[graphql(description = "A registered member")]
 // In this case the Post struct is the same in the database and in the GraphQL API.
@@ -17,11 +15,6 @@ pub struct Post {
     pub body: String,
 }
 
-impl Model for Post {
-    fn collection_name() -> String {
-        "posts".to_string()
-    }
-}
 // pub struct NewPost<'a> {
 //     pub title: Option<&'a str>,
 //     pub body: Option<&'a str>,

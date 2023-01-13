@@ -48,4 +48,4 @@ Run the following commands in order
 
 2. Install diesel-cli with `cargo install diesel_cli --no-default-features --features postgres`.
 
-3. Run `diesel print-schema > src/graph/schema.rs`.
+3. Run `diesel print-schema > src/models/schema.rs`.

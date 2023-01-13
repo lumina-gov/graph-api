@@ -1,22 +1,22 @@
-use std::sync::Arc;
+use diesel_async::AsyncPgConnection;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::deadpool::Pool;
 
 pub struct Context {
     // Use your real database pool here.
-    pub postgrest_client: Arc<postgrest::Postgrest>,
-    pub postgrest_jwt: String
+    pub diesel_pool: Pool<AsyncPgConnection>,
 }
 // To make our context usable by Juniper, we have to implement a marker trait.
 impl juniper::Context for Context {}
 
-pub fn create_context() -> Context {
-    let postgrest_url: String = dotenv::var("POSTGREST_URL")
-        .expect("POSTGREST_URL not set in .env");
+pub async fn create_context() -> Result<Context, anyhow::Error> {
+    let postgrest_url: String = dotenv::var("DATABASE_URL")
+        .expect("DATABASE_URL not set in .env");
 
-    let postgrest_jwt: String = dotenv::var("POSTGREST_JWT")
-        .expect("POSTGREST_JWT not set in .env");
+    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(postgrest_url);
+    let pool = Pool::builder(config).build()?;
 
-    Context {
-        postgrest_client: Arc::new(postgrest::Postgrest::new(postgrest_url)),
-        postgrest_jwt
-    }
+    Ok(Context {
+        diesel_pool: pool,
+    })
 }

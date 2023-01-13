@@ -1,6 +1,11 @@
+use crate::models::{course::Course};
+use crate::models::schema::courses::dsl::*;
 use super::context::Context;
-use crate::models::{post::{NewPostInput, Post}};
+use chrono::DateTime;
+use diesel::query_dsl::methods::FilterDsl;
+use diesel_async::RunQueryDsl;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
+use uuid::Uuid;
 
 pub struct Query;
 pub struct Mutation;
@@ -19,23 +24,14 @@ pub fn create_schema() -> Schema {
     // needs access to the context.
     context = Context
 )]
-impl Query {
-    fn apiVersion() -> &'static str {
-        "1.0"
-    }
 
-    // #[graphql(name = "postById")] is redundant
-    async fn post_by_id(context: &Context, post_id: i32) -> FieldResult<Post> {
-        let post = context.postgrest_client
-            .from("posts")
-            .auth(context.postgrest_jwt.as_str())
-            .select("*")
-            .eq("id", post_id.to_string())
-            .single()
-            .execute()
+impl Query {
+    async fn courses(context: &Context) -> FieldResult<Vec<Course>> {
+        let data = courses
+            .load::<Course>(&mut context.diesel_pool.get().await?)
             .await?;
 
-        panic!("{:#?}", post);
+        Ok(data)
     }
 }
 
@@ -43,15 +39,7 @@ impl Query {
     context = Context
 )]
 impl Mutation {
-    fn apiVersion() -> &'static str {
-        "1.0"
-    }
-    pub fn new_post(_context: &Context, input: NewPostInput) -> FieldResult<Post> {
-        Ok(Post {
-            id: 1,
-            published: true,
-            title: input.title,
-            body: input.body,
-        })
+    fn test() -> String {
+        "Hello World!".into()
     }
 }
