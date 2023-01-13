@@ -3,3 +3,4 @@ debug/
 .DS_Store
 .env
 sample_query
+Cargo.lock
