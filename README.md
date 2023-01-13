@@ -13,7 +13,7 @@ Create a .env file with the following variables
 
 ### Deployment
 
-1. Install [cargo-lambda](https://www.cargo-lambda.info/), advisedly with `pip3 install cargo-lambda`.
+1. Install [cargo-lambda](https://www.cargo-lambda.info/), advisedly with `cargo install cargo-lambda`.
 
 2. Set [AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) in `~/.aws/credentials` (and optionally region)
 
