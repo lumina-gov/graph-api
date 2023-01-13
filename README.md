@@ -8,12 +8,32 @@ Further documentation for the AWS Rust runtime is available [here](https://githu
 
 Create a .env file with the following variables
 
-    # PostgreSQL connection string
-    DATABASE_URL=
+PostgreSQL connection string, with the database password obtained from supabase
+```
+DATABASE_URL=
+```
+
+### Local Development
+
+1. Clone the repository to your computer
+2. Ensure you have the rust toolchain installed
+3. Run `cargo lambda watch`
+4. You can now use the endpoint `http://localhost:9000/lambda-url/lumina-rust-graph/`
+
+#### MacOS Installation Instructions
+
+Run the following commands in order
+
+1. `brew install postgresql libpq`
+2. `cargo clean`
+3. `cargo build`
+4. `cargo install diesel_cli --no-default-features --features postgres`
 
 ### Deployment
 
-1. Install [cargo-lambda](https://www.cargo-lambda.info/), advisedly with `pip3 install cargo-lambda`.
+> Deployment has already been automated so we should not be doing this anymore
+
+1. Install [cargo-lambda](https://www.cargo-lambda.info/), advisedly with `cargo install cargo-lambda`.
 
 2. Set [AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) in `~/.aws/credentials` (and optionally region)
 
@@ -22,17 +42,10 @@ Create a .env file with the following variables
 4. Deploy with `cargo lambda deploy --env-file .env --enable-function-url lumina-rust-graph`
 
 5. You can now use the endpoint returned by the previous command.
-
-### Development
-
-1. Run `cargo lambda watch`
-
-2. You can now use the endpoint `http://localhost:9000/lambda-url/lumina-rust-graph/`
-
 ### Generate ORM
 
 1. Make sure you have libpg installed (on Gentoo, `emerge dev-db/postgresql`).
 
 2. Install diesel-cli with `cargo install diesel_cli --no-default-features --features postgres`.
 
-3. Run `diesel print-schema > src/graph/schema.rs`.
+3. Run `diesel print-schema > src/models/schema.rs`.

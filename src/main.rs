@@ -1,12 +1,19 @@
-use lambda_http::{run, service_fn, Body, Error, Request, Response};
+
 mod graph;
+mod models;
+
+use std::sync::Arc;
+
+use graph::{resolvers::{self, Schema}, context::Context};
+use juniper::http::GraphQLRequest;
+use lambda_http::{run, service_fn, Body, Error, Request, Response};
 use dotenv;
 
 /// This is the main body for the function.
 /// Write your code inside it.
 /// There are some code example in the following URLs:
 /// - https://github.com/awslabs/aws-lambda-rust-runtime/tree/main/examples
-async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+async fn function_handler(event: Request, schema: &Schema, context: &Context) -> Result<Response<Body>, Error> {
     if event.method() == "OPTIONS" {
         let resp = Response::builder()
             .status(200)
@@ -17,9 +24,11 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
             .map_err(Box::new)?;
         Ok(resp)
     } else if event.method() == "POST" {
-        let query_string = std::str::from_utf8(event.body()).expect("Invalid utf-8 sequence");
+        let request_string = std::str::from_utf8(event.body()).unwrap();
+        let graphql_request: GraphQLRequest = serde_json::from_str(request_string).unwrap();
 
-        let data = graph::endpoint::run_request(query_string);
+        let res = graphql_request.execute(schema, context).await;
+        let data = serde_json::to_string(&res).unwrap();
 
         // Return something that implements IntoResponse.
         // It will be serialized to the right response event automatically by the runtime
@@ -51,5 +60,15 @@ async fn main() -> Result<(), Error> {
         .without_time()
         .init();
 
-    run(service_fn(function_handler)).await
+    let schema = Arc::new(resolvers::create_schema());
+    let context = Arc::new(graph::context::create_context().await?);
+
+    run(service_fn(|event: Request| {
+        let schema = schema.clone();
+        let context = context.clone();
+
+        async move {
+            function_handler(event, &schema, &context).await
+        }
+    })).await
 }
