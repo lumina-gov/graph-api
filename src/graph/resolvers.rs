@@ -1,5 +1,5 @@
 use super::context::Context;
-use crate::models::{post::{NewPostInput, Post}, utils::model::Model};
+use crate::models::{post::{NewPostInput, Post}};
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 
 pub struct Query;
