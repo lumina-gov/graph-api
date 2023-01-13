@@ -1,5 +1,5 @@
 [package]
-name = "lumina-rust-graph"
+name = "graph-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,14 +7,13 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
-juniper = "0.15.10"
-postgrest = "1.0"
+juniper = { version = "0.15.10", features = [] }
 tokio = { version = "1.24.1", features = ["rt-multi-thread", "macros"] }
 lambda_http = { version = "0.7", default-features = false, features = ["apigw_http"] }
 lambda_runtime = "0.7"
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
-diesel = { version = "2.0.2", features = ["postgres", "r2d2"] }
 serde_json = "1.0.91"
 serde = "1.0.152"
-
+postgrest = "1.0"
+anyhow = "1.0.68"
