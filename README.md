@@ -9,6 +9,7 @@ Further documentation for the AWS Rust runtime is available [here](https://githu
 Create a .env file with the following variables
 
 PostgreSQL connection string, with the database password obtained from supabase
+
 ```
 DATABASE_URL=
 ```
@@ -42,6 +43,7 @@ Run the following commands in order
 4. Deploy with `cargo lambda deploy --env-file .env --enable-function-url graph-api`
 
 5. You can now use the endpoint returned by the previous command.
+
 ### Generate ORM
 
 1. Make sure you have libpg installed (on Gentoo, `emerge dev-db/postgresql`).

@@ -1,5 +1,5 @@
 [package]
-name = "graph-server"
+name = "graph-api"
 version = "0.1.0"
 edition = "2021"
 
