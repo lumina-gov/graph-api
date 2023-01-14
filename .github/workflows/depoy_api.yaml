@@ -23,7 +23,7 @@ jobs:
         run: sudo apt-get update
         continue-on-error: true
       - name: Install libpq
-        run: sudo apt-get install libpq-dev:arm64
+        run: sudo apt-get install libpq-dev
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Install AWS CLI
@@ -38,7 +38,7 @@ jobs:
       #   uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: cargo lambda build --arm64 --release
+        run: cargo lambda build --release
 
         # we might want to zip here instead of deploying as a binary
       - name: Deploy
