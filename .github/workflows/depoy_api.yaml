@@ -17,9 +17,10 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
+      - name: Use arm architecture
+        run: sudo dpkg --add-architecture arm64
       - name: Install libpq
-        run: sudo dpkg --add-architecture arm64 \
-          sudo apt-get install libpq-dev:arm64
+        run: sudo apt-get install libpq-dev:arm64
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Install AWS CLI
