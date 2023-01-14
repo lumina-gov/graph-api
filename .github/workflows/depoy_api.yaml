@@ -19,6 +19,8 @@ jobs:
           crate: cargo-lambda
       - name: Use arm architecture
         run: sudo dpkg --add-architecture arm64
+      - name: Update apt-get
+        run: sudo apt-get update
       - name: Install libpq
         run: sudo apt-get install libpq-dev
       - name: Install Zig
