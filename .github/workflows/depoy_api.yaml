@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Use arm architecture
-        run:
+        run: |
           sudo dpkg --add-architecture arm64
           sudo dpkg --print-foreign-architectures
       - name: Update apt-get
