@@ -17,6 +17,8 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
+      - name: Install libpq
+        run: sudo apt-get install libpq-dev
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Install AWS CLI
