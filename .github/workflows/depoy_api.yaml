@@ -42,7 +42,8 @@ jobs:
       - name: Rustup target
         run: rustup target add aarch64-unknown-linux-gnu
       - name: Build
-        run: cargo lambda build --compiler cargo --arm64 --release
+        # run: cargo lambda build --compiler cargo --arm64 --release
+        run: cargo build --release --target aarch64-unknown-linux-gnu
 
         # we might want to zip here instead of deploying as a binary
       - name: Deploy
