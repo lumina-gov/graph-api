@@ -23,14 +23,10 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
-
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
-      - name: Rustup target
-        run: rustup target add aarch64-unknown-linux-gnu
       - name: Build
-        # run: cargo lambda build --compiler cargo --arm64 --release
-        run: cargo build --release --target aarch64-unknown-linux-gnu
+        run: cargo lambda build --compiler cargo --release
 
       - name: Install AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
