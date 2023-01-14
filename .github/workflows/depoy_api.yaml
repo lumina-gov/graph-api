@@ -13,6 +13,8 @@ jobs:
             toolchain: nightly
             override: true
             components: rustfmt, clippy
+      - name: Cargo clean
+        run: cargo clean
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
@@ -34,8 +36,8 @@ jobs:
           aws-region: ap-southeast-2
       - name: Checkout
         uses: actions/checkout@v2
-      # - name: Load Rust cache
-      #   uses: Swatinem/rust-cache@v2
+      - name: Load Rust cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build
         run: cargo lambda build --release
