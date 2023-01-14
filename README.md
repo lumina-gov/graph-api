@@ -1,4 +1,4 @@
-# lumina-rust-graph
+# graph-api
 
 A serverless function that implements the GraphQL API for Lumina services. It uses a PostgeSQL database, Juniper to serve GraphQL queries and is designed to be deployed to AWS Lambda.
 
@@ -18,7 +18,7 @@ DATABASE_URL=
 1. Clone the repository to your computer
 2. Ensure you have the rust toolchain installed
 3. Run `cargo lambda watch`
-4. You can now use the endpoint `http://localhost:9000/lambda-url/lumina-rust-graph/`
+4. You can now use the endpoint `http://localhost:9000/lambda-url/graph-api/`
 
 #### MacOS Installation Instructions
 
@@ -39,7 +39,7 @@ Run the following commands in order
 
 3. Build the project with `cargo lambda build --release`
 
-4. Deploy with `cargo lambda deploy --env-file .env --enable-function-url lumina-rust-graph`
+4. Deploy with `cargo lambda deploy --env-file .env --enable-function-url graph-api`
 
 5. You can now use the endpoint returned by the previous command.
 ### Generate ORM
