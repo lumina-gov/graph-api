@@ -23,7 +23,7 @@ jobs:
         run: sudo apt-get update
         continue-on-error: true
       - name: Install libpq
-        run: sudo apt-get install libpq-dev
+        run: sudo apt-get install libpq-dev:arm64
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Install AWS CLI
