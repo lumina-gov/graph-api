@@ -40,7 +40,8 @@ jobs:
 
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
-
+      - name: Rustup target
+        run: rustup target add aarch64-unknown-linux-gnu
       - name: Build
         run: cargo lambda build --compiler cargo --arm64 --release
 
