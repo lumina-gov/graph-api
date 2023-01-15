@@ -36,7 +36,7 @@ impl Course {
 }
 
 #[derive(GraphQLObject, Serialize, Deserialize, Identifiable, Queryable, Debug, Associations)]
-#[belongs_to(Course)]
+#[diesel(belongs_to(Course))]
 pub struct Unit {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub name: String,
