@@ -1,8 +1,9 @@
-use crate::models::{course::Course};
-use crate::models::schema::courses::dsl::*;
 use super::context::Context;
-use chrono::DateTime;
-use diesel::query_dsl::methods::FilterDsl;
+use crate::models::course::Course;
+use crate::models::course::CourseInsertable;
+use crate::models::course::CreateCourseInput;
+use crate::models::schema::courses::dsl::*;
+use diesel::insert_into;
 use diesel_async::RunQueryDsl;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
@@ -41,5 +42,15 @@ impl Query {
 impl Mutation {
     fn test() -> String {
         "Hello World!".into()
+    }
+    async fn create_course(context: &Context, course: CreateCourseInput) -> FieldResult<Course> {
+        let conn = &mut context.diesel_pool.get().await?;
+        Ok(insert_into(courses)
+            .values(CourseInsertable {
+                id: Uuid::new_v4(),
+                name: course.name,
+            })
+            .get_result(conn)
+            .await?)
     }
 }

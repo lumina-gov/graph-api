@@ -36,7 +36,7 @@ async fn function_handler(
 
             response
                 .status(200)
-                .header("content-type", "text/json")
+                .header("content-type", "application/json")
                 .header("Access-Control-Allow-Origin", "*")
                 .body(json.into())
         }
