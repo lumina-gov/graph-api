@@ -13,7 +13,7 @@ use crate::{error::ErrorCode};
 use crate::models::schema::users;
 use diesel::ExpressionMethods;
 
-#[derive(Debug, Deserialize, Serialize, Identifiable, Queryable, Insertable)]
+#[derive(Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable)]
 pub struct User {
     pub id: Uuid,
     pub email: String,

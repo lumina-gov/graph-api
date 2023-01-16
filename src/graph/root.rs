@@ -1,4 +1,4 @@
-use crate::graph::auth::verify_jwt;
+use crate::error::ErrorCode;
 use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
@@ -6,7 +6,6 @@ use crate::models::schema::courses::dsl::*;
 use crate::models::user::CreateUserInput;
 use crate::models::user::User;
 use diesel::insert_into;
-use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
@@ -39,17 +38,11 @@ impl Query {
 
         Ok(data)
     }
-    async fn me(context: &UniqueContext, jwt: String) -> FieldResult<User> {
-        use crate::models::schema::users::dsl::*;
-
-        let uuid = verify_jwt(jwt.as_ref())?;
-
-        let data = users
-            .find(uuid)
-            .first::<User>(&mut context.diesel_pool.get().await?)
-            .await?;
-
-        Ok(data)
+    async fn me(context: &UniqueContext) -> FieldResult<User> {
+        match context.user.clone() {
+            Some(user) => Ok(user),
+            None => Err(ErrorCode::Unauthenticated.into()),
+        }
     }
 }
 
@@ -60,7 +53,10 @@ impl Mutation {
     fn test() -> String {
         "Hello World!".into()
     }
-    async fn create_course(context: &UniqueContext, course: CreateCourseInput) -> FieldResult<Course> {
+    async fn create_course(
+        context: &UniqueContext,
+        course: CreateCourseInput,
+    ) -> FieldResult<Course> {
         let conn = &mut context.diesel_pool.get().await?;
         Ok(insert_into(courses)
             .values(CourseInsertable {
@@ -71,7 +67,10 @@ impl Mutation {
             .await?)
     }
 
-    async fn create_user(context: &UniqueContext, create_user_input: CreateUserInput) -> FieldResult<Uuid> {
+    async fn create_user(
+        context: &UniqueContext,
+        create_user_input: CreateUserInput,
+    ) -> FieldResult<Uuid> {
         User::create_user(context, create_user_input).await
     }
 }

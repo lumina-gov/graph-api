@@ -9,6 +9,7 @@ pub enum ErrorCode {
     InvalidToken,
     CouldNotCreateToken,
     FailedToHashPassword,
+    Unauthenticated,
 }
 
 /// These error codes should never change,
@@ -22,6 +23,7 @@ impl std::fmt::Display for ErrorCode {
             ErrorCode::InvalidToken => write!(f, "INVALID_TOKEN"),
             ErrorCode::CouldNotCreateToken => write!(f, "COULD_NOT_CREATE_TOKEN"),
             ErrorCode::FailedToHashPassword => write!(f, "FAILED_TO_HASH_PASSWORD"),
+            ErrorCode::Unauthenticated => write!(f, "UNAUTHENTICATED"),
         }
     }
 }
@@ -36,6 +38,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                 Self::InvalidToken => "Invalid authentication token",
                 Self::CouldNotCreateToken => "Could not create authentication token",
                 Self::FailedToHashPassword => "Could not hash password",
+                Self::Unauthenticated => "You are not authenticated",
             },
             graphql_value!({
                 "code": self.to_string(),
