@@ -1,5 +1,4 @@
-use juniper::{ScalarValue, graphql_value};
-
+use juniper::{ScalarValue, graphql_value, FieldError, IntoFieldError};
 
 #[derive(Debug)]
 pub enum ErrorCode {
@@ -10,22 +9,6 @@ pub enum ErrorCode {
     CouldNotCreateToken,
     FailedToHashPassword,
     Unauthenticated,
-}
-
-/// These error codes should never change,
-/// so we can reliably match on them in the frontend.
-impl std::fmt::Display for ErrorCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ErrorCode::UserAlreadyExists => write!(f, "USER_ALREADY_EXISTS"),
-            ErrorCode::PasswordMismatch => write!(f, "PASSWORD_MISMATCH"),
-            ErrorCode::UserNotFound => write!(f, "USER_NOT_FOUND"),
-            ErrorCode::InvalidToken => write!(f, "INVALID_TOKEN"),
-            ErrorCode::CouldNotCreateToken => write!(f, "COULD_NOT_CREATE_TOKEN"),
-            ErrorCode::FailedToHashPassword => write!(f, "FAILED_TO_HASH_PASSWORD"),
-            ErrorCode::Unauthenticated => write!(f, "UNAUTHENTICATED"),
-        }
-    }
 }
 
 impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
@@ -40,9 +23,25 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                 Self::FailedToHashPassword => "Could not hash password",
                 Self::Unauthenticated => "You are not authenticated",
             },
+            // These codes should never change
+            // as they are used by the frontend to handle errors
             graphql_value!({
-                "code": self.to_string(),
+                "code": match self {
+                    ErrorCode::UserAlreadyExists => "USER_ALREADY_EXISTS",
+                    ErrorCode::PasswordMismatch => "PASSWORD_MISMATCH",
+                    ErrorCode::UserNotFound => "USER_NOT_FOUND",
+                    ErrorCode::InvalidToken => "INVALID_TOKEN",
+                    ErrorCode::CouldNotCreateToken => "COULD_NOT_CREATE_TOKEN",
+                    ErrorCode::FailedToHashPassword => "FAILED_TO_HASH_PASSWORD",
+                    ErrorCode::Unauthenticated => "UNAUTHENTICATED",
+                }
             })
         )
+    }
+}
+
+impl Into<FieldError> for ErrorCode {
+    fn into(self) -> FieldError {
+        self.into_field_error()
     }
 }
