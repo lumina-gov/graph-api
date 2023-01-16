@@ -2,7 +2,7 @@
 
 diesel::table! {
     course_progress (id) {
-        id -> Int8,
+        id -> Int4,
         course_id -> Uuid,
         user_id -> Uuid,
         credits -> Int4,
@@ -46,9 +46,14 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Uuid,
-        bio -> Nullable<Varchar>,
         email -> Varchar,
-        created_at -> Timestamptz,
+        joined -> Timestamptz,
+        password -> Varchar,
+        first_name -> Varchar,
+        last_name -> Varchar,
+        calling_code -> Varchar,
+        country_code -> Varchar,
+        phone_number -> Varchar,
     }
 }
 

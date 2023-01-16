@@ -10,7 +10,7 @@ struct Claims {
     exp: usize,
 }
 
-pub fn verifyJWT(jwt: &str) -> Result<Uuid, Error> {
+pub fn verify_jwt(jwt: &str) -> Result<Uuid, Error> {
     let jwt_secret = dotenv::var("JWT_SECRET").expect("JWT_SECRET not set in .env");
     let token = decode::<Claims>(
         &jwt,
