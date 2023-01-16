@@ -1,14 +1,16 @@
+#![feature(never_type)]
 mod graph;
 mod models;
+mod error;
 
 use std::sync::Arc;
 
 use dotenv;
 use graph::{
-    context::Context,
+    context::{GeneralContext},
     root::{self, Schema},
 };
-use juniper::http::GraphQLRequest;
+use juniper::http::{GraphQLRequest, GraphQLResponse};
 use lambda_http::{run, service_fn, Body, Error, Request, Response};
 
 /// There are some code example in the following URLs:
@@ -16,10 +18,12 @@ use lambda_http::{run, service_fn, Body, Error, Request, Response};
 async fn function_handler(
     event: Request,
     schema: &Schema,
-    context: &Context,
+    context: &GeneralContext,
 ) -> Result<Response<Body>, Error> {
     println!("Handling {} request...", event.method());
     let response = Response::builder();
+
+    let mut unique_context = context.new_unique_context().await;
 
     match event.method().as_str() {
         "OPTIONS" => response
@@ -29,9 +33,29 @@ async fn function_handler(
             .header("Access-Control-Allow-Headers", "Content-Type")
             .body(Body::Empty),
         "POST" => {
-            let request_string = std::str::from_utf8(event.body())?;
-            let graphql_request: GraphQLRequest = serde_json::from_str(request_string)?;
-            let graphql_response = graphql_request.execute(schema, context).await;
+            // get token from header
+            let token = event.headers().get("Authorization").map(|v| v.to_str().unwrap().to_string());
+            let user_result = match token {
+                Some(token) => {
+                    let user = models::user::User::authenticate_from_token(&unique_context, token).await;
+                    match user {
+                        Ok(user) => Ok(Some(user)),
+                        Err(e) => Err(GraphQLResponse::error(e))
+                    }
+                },
+                None => Ok(None)
+            };
+
+            let graphql_response = match user_result {
+                Ok(user) => {
+                    unique_context.user = user;
+                    let request_string = std::str::from_utf8(event.body())?;
+                    let graphql_request: GraphQLRequest = serde_json::from_str(request_string)?;
+                    graphql_request.execute(schema, &unique_context).await
+                }
+                Err(e) => e
+            };
+
             let json = serde_json::to_string(&graphql_response)?;
 
             response
@@ -62,7 +86,7 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let schema = Arc::new(root::create_schema());
-    let context = Arc::new(graph::context::create_context().await?);
+    let context = Arc::new(graph::context::GeneralContext::new().await?);
 
     run(service_fn(|event: Request| {
         let schema = schema.clone();
