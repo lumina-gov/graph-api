@@ -46,14 +46,20 @@ impl User {
             id: Uuid::new_v4(),
             email: create_user.email,
             joined: Utc::now(),
-            password: bcrypt::hash(&create_user.password, bcrypt::DEFAULT_COST)
-                .map_err(|_| ErrorCode::FailedToHashPassword)?,
+            password: match bcrypt::hash(&create_user.password, bcrypt::DEFAULT_COST) {
+                Ok(hash) => hash,
+                Err(e) => {
+                    tracing::error!("Error hashing password: {}", e);
+                    return Err(ErrorCode::FailedToHashPassword.into());
+                }
+            },
             first_name: create_user.first_name,
             last_name: create_user.last_name,
             calling_code: create_user.calling_code,
             country_code: create_user.country_code,
             phone_number: create_user.phone_number,
         };
+
         match diesel::insert_into(users::table)
             .values(&user)
             .execute(conn)

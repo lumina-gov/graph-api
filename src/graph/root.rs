@@ -7,6 +7,7 @@ use crate::models::user::CreateUserInput;
 use crate::models::user::User;
 use diesel::insert_into;
 use diesel_async::RunQueryDsl;
+use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
 
