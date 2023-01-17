@@ -1,4 +1,4 @@
-use juniper::{GraphQLObject, GraphQLUnion};
+use juniper::{GraphQLInputObject, GraphQLObject, GraphQLUnion};
 
 #[derive(GraphQLObject)]
 pub struct Essay {
@@ -19,7 +19,7 @@ pub enum Question {
     MultipleChoice(MultipleChoice),
 }
 
-#[derive(GraphQLObject)]
+#[derive(GraphQLInputObject)]
 pub struct ApplicationInput {
     questions: Vec<Question>,
 }

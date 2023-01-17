@@ -116,5 +116,7 @@ impl Mutation {
     async fn login(context: &UniqueContext, login_user: LoginUserInput) -> FieldResult<String> {
         User::login_user(context, login_user).await
     }
-    fn submit_application(context: &UniqueContext, form: ApplicationInput) {}
+    fn submit_application(context: &UniqueContext, form: ApplicationInput) -> String {
+        "Foo".to_owned()
+    }
 }
