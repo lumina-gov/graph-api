@@ -1,4 +1,3 @@
-use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
@@ -7,11 +6,11 @@ use crate::models::course::CreateCourseInput;
 use crate::models::schema::courses::dsl::courses;
 use crate::models::schema::users::dsl::users;
 use crate::models::user::CreateUserInput;
+use crate::models::user::LoginUserInput;
 use crate::models::user::User;
 use diesel::QueryDsl;
 use diesel::insert_into;
 use diesel_async::RunQueryDsl;
-use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
 use zxcvbn::time_estimates::CrackTimeSeconds;
@@ -75,6 +74,23 @@ impl Query {
             context,
             citizenship_application,
         ).await
+    }
+
+    async fn login(
+        &self,
+        context: &UniqueContext,
+        login_user: LoginUserInput,
+    ) -> FieldResult<String> {
+        User::login_user(context, login_user)
+            .await
+    }
+
+    async fn create_user(
+        &self,
+        context: &UniqueContext,
+        create_user_input: CreateUserInput,
+    ) -> FieldResult<Uuid> {
+        User::create_user(context, create_user_input).await
     }
 
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
