@@ -1,13 +1,12 @@
-#![feature(never_type)]
+mod error;
 mod graph;
 mod models;
-mod error;
 
 use std::sync::Arc;
 
 use dotenv;
 use graph::{
-    context::{GeneralContext},
+    context::GeneralContext,
     root::{self, Schema},
 };
 use juniper::http::{GraphQLRequest, GraphQLResponse};
@@ -34,16 +33,20 @@ async fn function_handler(
             .body(Body::Empty),
         "POST" => {
             // get token from header
-            let token = event.headers().get("Authorization").map(|v| v.to_str().unwrap().to_string());
+            let token = event
+                .headers()
+                .get("Authorization")
+                .map(|v| v.to_str().unwrap().to_string());
             let user_result = match token {
                 Some(token) => {
-                    let user = models::user::User::authenticate_from_token(&unique_context, token).await;
+                    let user =
+                        models::user::User::authenticate_from_token(&unique_context, token).await;
                     match user {
                         Ok(user) => Ok(Some(user)),
-                        Err(e) => Err(GraphQLResponse::error(e))
+                        Err(e) => Err(GraphQLResponse::error(e)),
                     }
-                },
-                None => Ok(None)
+                }
+                None => Ok(None),
             };
 
             let graphql_response = match user_result {
@@ -53,7 +56,7 @@ async fn function_handler(
                     let graphql_request: GraphQLRequest = serde_json::from_str(request_string)?;
                     graphql_request.execute(schema, &unique_context).await
                 }
-                Err(e) => e
+                Err(e) => e,
             };
 
             let json = serde_json::to_string(&graphql_response)?;

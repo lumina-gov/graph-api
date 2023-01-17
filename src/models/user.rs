@@ -1,17 +1,21 @@
 use std::time::SystemTime;
 
+use crate::error::ErrorCode;
+use crate::graph::context::UniqueContext;
+use crate::models::schema::users;
+use chrono::serde::ts_milliseconds;
 use chrono::{DateTime, Utc};
-use diesel::{Identifiable, Queryable, Insertable, QueryDsl, OptionalExtension, result::DatabaseErrorKind};
+use diesel::ExpressionMethods;
+use diesel::{
+    result::DatabaseErrorKind, Identifiable, Insertable, OptionalExtension, QueryDsl, Queryable,
+};
 use diesel_async::RunQueryDsl;
-use jsonwebtoken::{EncodingKey, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 use serde::{Deserialize, Serialize};
-use chrono::serde::ts_milliseconds;
 use uuid::Uuid;
-use crate::graph::context::UniqueContext;
-use crate::{error::ErrorCode};
-use crate::models::schema::users;
-use diesel::ExpressionMethods;
+
+use super::flexible_application::{Application, ApplicationType};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable)]
 pub struct User {
@@ -25,7 +29,7 @@ pub struct User {
     pub calling_code: String,
     pub country_code: String,
     pub phone_number: String,
-    pub role: Option<String>
+    pub role: Option<String>,
 }
 
 #[graphql_object(
@@ -34,6 +38,12 @@ pub struct User {
 impl User {
     fn id(&self) -> Uuid {
         self.id
+    }
+    fn applications(&self, filter_type: Option<ApplicationType>) -> Vec<Application> {
+        // TODO get the user's applications
+        // if filter_type is present, return only specific ones
+        // remember to authenticate user
+        vec![]
     }
 }
 
@@ -59,13 +69,14 @@ impl User {
             calling_code: create_user.calling_code,
             country_code: create_user.country_code,
             phone_number: create_user.phone_number,
-            role: None
+            role: None,
         };
 
         match diesel::insert_into(users::table)
             .values(&user)
             .execute(conn)
-            .await {
+            .await
+        {
             Ok(_) => tracing::info!("User created: {}", &user.email),
             Err(diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
                 tracing::error!("User already exists: {}", &user.email);
@@ -109,9 +120,7 @@ impl User {
                         user_id: user.id,
                         created: SystemTime::now(),
                     },
-                    &EncodingKey::from_secret(
-                        dotenv::var("JWT_SECRET")?.as_bytes(),
-                    ),
+                    &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
                 ) {
                     Ok(token) => Ok(token),
                     Err(_) => {
@@ -149,7 +158,7 @@ impl User {
             Ok(decoded) => {
                 let conn = &mut context.diesel_pool.get().await?;
                 let user = users::table
-                    .filter(users::id.eq(decoded.claims.user_id))
+                    .find(decoded.claims.user_id)
                     .first::<User>(conn)
                     .await?;
 

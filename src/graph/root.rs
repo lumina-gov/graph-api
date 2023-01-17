@@ -1,15 +1,15 @@
-use crate::models::application::ApplicationInput;
-use crate::models::application::Question;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
+use crate::models::flexible_application::ApplicationType;
 use crate::models::schema::courses::dsl::courses;
 use crate::models::schema::users::dsl::users;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
+use diesel::associations::HasTable;
 use diesel::insert_into;
 use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
@@ -17,8 +17,10 @@ use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
 use zxcvbn::time_estimates::CrackTimeSeconds;
 
+use super::context::GeneralContext;
 use super::context::UniqueContext;
 use super::misc::CrackSeconds;
+use diesel::ExpressionMethods;
 
 pub struct Query;
 pub struct Mutation;
@@ -79,6 +81,18 @@ impl Query {
 
         Ok(data)
     }
+    async fn course_by_slug(context: &UniqueContext, slug: String) -> FieldResult<Course> {
+        use crate::models::schema::courses::*;
+        let conn = &mut context.diesel_pool.get().await;
+
+        let data = courses
+            .filter(dsl::slug.eq(slug))
+            .first::<Course>(conn)
+            .await?;
+
+        Ok(data)
+    }
+
     async fn me(context: &UniqueContext) -> FieldResult<User> {
         context.user()
     }
@@ -116,7 +130,14 @@ impl Mutation {
     async fn login(context: &UniqueContext, login_user: LoginUserInput) -> FieldResult<String> {
         User::login_user(context, login_user).await
     }
-    fn submit_application(context: &UniqueContext, form: ApplicationInput) -> String {
-        "Foo".to_owned()
+    fn submit_application(
+        context: &UniqueContext,
+        bson: String,
+        application_type: ApplicationType,
+    ) -> FieldResult<bool> {
+        // TODO:
+        // 1. Check that user has no applications that are of application_type, else Error()
+        // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
+        Ok(true)
     }
 }
