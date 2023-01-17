@@ -55,14 +55,14 @@ impl Query {
         })
     }
 
-    // async fn user_count(context: &UniqueContext) -> FieldResult<u32> {
-    //     let data = users
-    //         .count()
-    //         .get_result(&mut context.diesel_pool.get().await?)
-    //         .await?;
+    async fn user_count(context: &UniqueContext) -> FieldResult<i32> {
+        let data: i64 = users
+            .count()
+            .get_result(&mut context.diesel_pool.get().await?)
+            .await?;
 
-    //     Ok(data)
-    // }
+        Ok(data as i32)
+    }
 
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
         let data = courses
