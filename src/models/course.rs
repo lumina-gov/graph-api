@@ -1,6 +1,9 @@
 use crate::graph::context::UniqueContext;
 
-use super::{schema::{course_progress, courses, units, users}, unit::Unit};
+use super::{
+    schema::{course_progress, courses, units, users},
+    unit::Unit,
+};
 use diesel::BelongingToDsl;
 use diesel_async::RunQueryDsl;
 
@@ -25,6 +28,9 @@ impl Course {
     pub fn id(&self) -> Uuid {
         self.id
     }
+    pub fn slug(&self) -> String {
+        self.slug.clone()
+    }
     pub fn name(&self) -> String {
         self.name.clone()
     }
@@ -36,7 +42,6 @@ impl Course {
         Ok(Unit::belonging_to(self).load::<Unit>(conn).await?)
     }
 }
-
 
 // #[derive(Serialize, Deserialize, Identifiable, Queryable, Debug)]
 // struct CourseProgress {
