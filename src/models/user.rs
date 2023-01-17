@@ -25,6 +25,7 @@ pub struct User {
     pub calling_code: String,
     pub country_code: String,
     pub phone_number: String,
+    pub role: Option<String>
 }
 
 #[graphql_object(
@@ -58,6 +59,7 @@ impl User {
             calling_code: create_user.calling_code,
             country_code: create_user.country_code,
             phone_number: create_user.phone_number,
+            role: None
         };
 
         match diesel::insert_into(users::table)

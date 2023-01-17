@@ -1,4 +1,6 @@
 use crate::error::ErrorCode;
+use crate::models::citizenship_application::CitizenshipApplication;
+use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
@@ -64,6 +66,17 @@ impl Query {
         Ok(data as i32)
     }
 
+    async fn create_citizenship_application(
+        &self,
+        context: &UniqueContext,
+        citizenship_application: CitizenshipApplicationInput,
+    ) -> FieldResult<CitizenshipApplication> {
+        CitizenshipApplication::create_citizenship_application(
+            context,
+            citizenship_application,
+        ).await
+    }
+
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
         let data = courses
             .load::<Course>(&mut context.diesel_pool.get().await?)
@@ -72,10 +85,7 @@ impl Query {
         Ok(data)
     }
     async fn me(context: &UniqueContext) -> FieldResult<User> {
-        match context.user.clone() {
-            Some(user) => Ok(user),
-            None => Err(ErrorCode::Unauthenticated.into()),
-        }
+        context.user()
     }
 }
 

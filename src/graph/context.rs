@@ -3,7 +3,9 @@ use std::sync::Arc;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
+use juniper::FieldResult;
 
+use crate::error::ErrorCode;
 use crate::models::user::User;
 
 pub struct GeneralContext {
@@ -40,3 +42,28 @@ pub struct UniqueContext {
 
 // To make our context usable by Juniper, we have to implement a marker trait.
 impl juniper::Context for UniqueContext {}
+
+impl UniqueContext {
+    pub fn authenticated(&self) -> bool {
+        self.user.is_some()
+    }
+
+    pub fn user(&self) -> FieldResult<User> {
+        match &self.user {
+            Some(user) => Ok(user.clone()),
+            None => Err(ErrorCode::Unauthenticated.into()),
+        }
+    }
+
+    pub fn has_role(&self, role: &str) -> bool {
+        match &self.user {
+            Some(user) => {
+                match &user.role {
+                    Some(user_role) => user_role == role,
+                    None => false
+                }
+            },
+            None => false
+        }
+    }
+}

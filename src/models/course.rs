@@ -66,4 +66,3 @@ pub struct CourseInsertable {
     pub name: String,
     pub id: Uuid,
 }
-

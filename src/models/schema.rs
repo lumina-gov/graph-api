@@ -23,7 +23,7 @@ diesel::table! {
         country_of_birth -> Text,
         country_of_residence -> Text,
         ethnic_groups -> Array<Nullable<Text>>,
-        citizenship_status -> Nullable<CitizenshipStatus>,
+        citizenship_status -> CitizenshipStatus,
         id -> Uuid,
     }
 }
@@ -84,6 +84,7 @@ diesel::table! {
         calling_code -> Varchar,
         country_code -> Varchar,
         phone_number -> Varchar,
+        role -> Nullable<Varchar>,
     }
 }
 
