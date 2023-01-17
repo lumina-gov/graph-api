@@ -24,4 +24,6 @@ chrono =  "0.4.23"
 uuid = { version = "1.0", features=["serde", "v4"] }
 jsonwebtoken = "8.2.0"
 bcrypt = "0.13.0"
+# 2.0.0-rc.0 is the latest version that supports diesel 2.0
 diesel-derive-enum = { version = "2.0.0-rc.0", features = ["postgres"] }
+zxcvbn = "2.2.1"

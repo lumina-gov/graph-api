@@ -2,16 +2,20 @@ use crate::error::ErrorCode;
 use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
-use crate::models::schema::courses::dsl::*;
+use crate::models::schema::courses::dsl::courses;
+use crate::models::schema::users::dsl::users;
 use crate::models::user::CreateUserInput;
 use crate::models::user::User;
+use diesel::QueryDsl;
 use diesel::insert_into;
 use diesel_async::RunQueryDsl;
 use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
+use zxcvbn::time_estimates::CrackTimeSeconds;
 
 use super::context::UniqueContext;
+use super::misc::CrackSeconds;
 
 pub struct Query;
 pub struct Mutation;
@@ -30,8 +34,36 @@ pub fn create_schema() -> Schema {
     // needs access to the context.
     context = UniqueContext
 )]
-
 impl Query {
+
+    /// Returns the crack time of a password
+    /// Used for password strength estimation
+    /// On the frontend
+    async fn crack_time(
+        &self,
+        password: String,
+    ) -> FieldResult<CrackSeconds> {
+        let guesses = match zxcvbn::zxcvbn(&password, &[]) {
+            Ok(entropy) => entropy.guesses(),
+            Err(_) => 0,
+        } as i32;
+
+        Ok(CrackSeconds {
+            guesses,
+            seconds: guesses as f64 / 100_000.0,
+            string: CrackTimeSeconds::Float(guesses as f64 / 100_000.0).to_string(),
+        })
+    }
+
+    // async fn user_count(context: &UniqueContext) -> FieldResult<u32> {
+    //     let data = users
+    //         .count()
+    //         .get_result(&mut context.diesel_pool.get().await?)
+    //         .await?;
+
+    //     Ok(data)
+    // }
+
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
         let data = courses
             .load::<Course>(&mut context.diesel_pool.get().await?)

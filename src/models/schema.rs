@@ -50,6 +50,7 @@ diesel::table! {
         id -> Uuid,
         created_at -> Timestamptz,
         name -> Varchar,
+        slug -> Text,
     }
 }
 
@@ -68,6 +69,7 @@ diesel::table! {
         id -> Uuid,
         parent_unit -> Nullable<Uuid>,
         course_id -> Uuid,
+        slug -> Text,
     }
 }
 

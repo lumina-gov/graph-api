@@ -6,12 +6,13 @@ Further documentation for the AWS Rust runtime is available [here](https://githu
 
 ### Configuration
 
-Create a .env file with the following variables
+Create a .env file with the following variables. The JWT_SECRET needs to be a random string of hexadecimal chararacters - you can write it randomly by hand for testing purposes
 
 PostgreSQL connection string, with the database password obtained from supabase
 
 ```
 DATABASE_URL=
+JWT_SECRET=
 ```
 
 ### Local Development

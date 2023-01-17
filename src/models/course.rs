@@ -15,6 +15,7 @@ pub struct Course {
     pub id: Uuid,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub name: String,
+    pub slug: String,
 }
 
 #[graphql_object(
