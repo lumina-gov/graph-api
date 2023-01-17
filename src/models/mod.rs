@@ -16,3 +16,4 @@ pub mod user;
 pub mod citizenship_application;
 pub mod organisation;
 pub mod unit;
+pub mod application;

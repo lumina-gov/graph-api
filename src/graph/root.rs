@@ -1,3 +1,5 @@
+use crate::models::application::ApplicationInput;
+use crate::models::application::Question;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
@@ -8,8 +10,8 @@ use crate::models::schema::users::dsl::users;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
-use diesel::QueryDsl;
 use diesel::insert_into;
+use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
@@ -36,14 +38,10 @@ pub fn create_schema() -> Schema {
     context = UniqueContext
 )]
 impl Query {
-
     /// Returns the crack time of a password
     /// Used for password strength estimation
     /// On the frontend
-    async fn crack_time(
-        &self,
-        password: String,
-    ) -> FieldResult<CrackSeconds> {
+    async fn crack_time(&self, password: String) -> FieldResult<CrackSeconds> {
         let guesses = match zxcvbn::zxcvbn(&password, &[]) {
             Ok(entropy) => entropy.guesses(),
             Err(_) => 0,
@@ -70,10 +68,8 @@ impl Query {
         context: &UniqueContext,
         citizenship_application: CitizenshipApplicationInput,
     ) -> FieldResult<CitizenshipApplication> {
-        CitizenshipApplication::create_citizenship_application(
-            context,
-            citizenship_application,
-        ).await
+        CitizenshipApplication::create_citizenship_application(context, citizenship_application)
+            .await
     }
 
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
@@ -117,13 +113,8 @@ impl Mutation {
     }
 
     /// Returns a JWT token for the user
-    async fn login(
-        &self,
-        context: &UniqueContext,
-        login_user: LoginUserInput,
-    ) -> FieldResult<String> {
-        User::login_user(context, login_user)
-            .await
+    async fn login(context: &UniqueContext, login_user: LoginUserInput) -> FieldResult<String> {
+        User::login_user(context, login_user).await
     }
-
+    fn submit_application(context: &UniqueContext, form: ApplicationInput) {}
 }
