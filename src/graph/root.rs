@@ -4,12 +4,9 @@ use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
 use crate::models::flexible_application::ApplicationType;
-use crate::models::schema::courses::dsl::courses;
-use crate::models::schema::users::dsl::users;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
-use diesel::associations::HasTable;
 use diesel::insert_into;
 use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
@@ -17,7 +14,6 @@ use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
 use zxcvbn::time_estimates::CrackTimeSeconds;
 
-use super::context::GeneralContext;
 use super::context::UniqueContext;
 use super::misc::CrackSeconds;
 use diesel::ExpressionMethods;
@@ -57,6 +53,8 @@ impl Query {
     }
 
     async fn user_count(context: &UniqueContext) -> FieldResult<i32> {
+        use crate::models::schema::users::dsl::*;
+
         let data: i64 = users
             .count()
             .get_result(&mut context.diesel_pool.get().await?)
@@ -75,22 +73,24 @@ impl Query {
     }
 
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
+        use crate::models::schema::courses::dsl::*;
+
         let data = courses
             .load::<Course>(&mut context.diesel_pool.get().await?)
             .await?;
 
         Ok(data)
     }
-    async fn course_by_slug(context: &UniqueContext, slug: String) -> FieldResult<Course> {
-        use crate::models::schema::courses::*;
-        let conn = &mut context.diesel_pool.get().await;
+    async fn course_by_slug(context: &UniqueContext, slug: String) -> FieldResult<Option<Course>> {
+        use crate::models::schema::courses::dsl;
+        let conn = &mut context.diesel_pool.get().await?;
 
-        let data = courses
+        let data = dsl::courses
             .filter(dsl::slug.eq(slug))
             .first::<Course>(conn)
-            .await?;
+            .await;
 
-        Ok(data)
+        Ok(data.ok())
     }
 
     async fn me(context: &UniqueContext) -> FieldResult<User> {
@@ -109,6 +109,8 @@ impl Mutation {
         context: &UniqueContext,
         course: CreateCourseInput,
     ) -> FieldResult<Course> {
+        use crate::models::schema::courses::dsl::*;
+
         let conn = &mut context.diesel_pool.get().await?;
         Ok(insert_into(courses)
             .values(CourseInsertable {
