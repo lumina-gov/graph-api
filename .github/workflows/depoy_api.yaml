@@ -10,8 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         continue-on-error: true
-      - name: Install musl
-        run: sudo apt-get install musl-tools
+      - name: Install musl and clang
+        run: sudo apt-get install musl-tools clang
       - name: Install rust nightly with aarch64 target
         uses: actions-rs/toolchain@v1
         with:
