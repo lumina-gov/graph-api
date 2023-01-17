@@ -76,24 +76,6 @@ impl Query {
         ).await
     }
 
-    /// Returns a JWT token for the user
-    async fn login(
-        &self,
-        context: &UniqueContext,
-        login_user: LoginUserInput,
-    ) -> FieldResult<String> {
-        User::login_user(context, login_user)
-            .await
-    }
-
-    async fn create_user(
-        &self,
-        context: &UniqueContext,
-        create_user_input: CreateUserInput,
-    ) -> FieldResult<Uuid> {
-        User::create_user(context, create_user_input).await
-    }
-
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
         let data = courses
             .load::<Course>(&mut context.diesel_pool.get().await?)
@@ -133,4 +115,15 @@ impl Mutation {
     ) -> FieldResult<Uuid> {
         User::create_user(context, create_user_input).await
     }
+
+    /// Returns a JWT token for the user
+    async fn login(
+        &self,
+        context: &UniqueContext,
+        login_user: LoginUserInput,
+    ) -> FieldResult<String> {
+        User::login_user(context, login_user)
+            .await
+    }
+
 }
