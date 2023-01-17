@@ -76,6 +76,7 @@ impl Query {
         ).await
     }
 
+    /// Returns a JWT token for the user
     async fn login(
         &self,
         context: &UniqueContext,
