@@ -63,15 +63,6 @@ impl Query {
         Ok(data as i32)
     }
 
-    async fn create_citizenship_application(
-        &self,
-        context: &UniqueContext,
-        citizenship_application: CitizenshipApplicationInput,
-    ) -> FieldResult<Uuid> {
-        CitizenshipApplication::create_citizenship_application(context, citizenship_application)
-            .await
-    }
-
     async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
         use crate::models::schema::courses::dsl::*;
 
@@ -143,4 +134,12 @@ impl Mutation {
     //     // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
     //     Ok(true)
     // }
+   async fn create_citizenship_application(
+        &self,
+        context: &UniqueContext,
+        citizenship_application: CitizenshipApplicationInput,
+    ) -> FieldResult<Uuid> {
+        CitizenshipApplication::create_citizenship_application(context, citizenship_application)
+            .await
+    }
 }
