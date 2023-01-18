@@ -11,8 +11,9 @@
 
 pub mod citizenship_application;
 pub mod course;
-pub mod flexible_application;
+pub mod applications;
 pub mod organisation;
 pub mod schema;
 pub mod unit;
 pub mod user;
+pub mod utils;

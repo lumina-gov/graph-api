@@ -1,9 +1,9 @@
+use crate::models::applications::Application;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
 use crate::models::course::CourseInsertable;
 use crate::models::course::CreateCourseInput;
-use crate::models::flexible_application::ApplicationType;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
@@ -67,7 +67,7 @@ impl Query {
         &self,
         context: &UniqueContext,
         citizenship_application: CitizenshipApplicationInput,
-    ) -> FieldResult<CitizenshipApplication> {
+    ) -> FieldResult<Uuid> {
         CitizenshipApplication::create_citizenship_application(context, citizenship_application)
             .await
     }
@@ -132,14 +132,15 @@ impl Mutation {
     async fn login(context: &UniqueContext, login_user: LoginUserInput) -> FieldResult<String> {
         User::login_user(context, login_user).await
     }
-    fn submit_application(
-        context: &UniqueContext,
-        bson: String,
-        application_type: ApplicationType,
-    ) -> FieldResult<bool> {
-        // TODO:
-        // 1. Check that user has no applications that are of application_type, else Error()
-        // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
-        Ok(true)
-    }
+
+    // commented this out while I get citizenship applications working
+    // fn submit_application(
+    //     context: &UniqueContext,
+    //     bson: String,
+    // ) -> FieldResult<bool> {
+    //     // TODO:
+    //     // 1. Check that user has no applications that are of application_type, else Error()
+    //     // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
+    //     Ok(true)
+    // }
 }

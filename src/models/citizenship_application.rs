@@ -1,16 +1,15 @@
 use chrono::{DateTime, Utc, serde::ts_milliseconds};
-use diesel::{Identifiable, Queryable, Insertable};
 use diesel_async::RunQueryDsl;
 use juniper::{GraphQLInputObject, FieldResult, graphql_object};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use crate::{models::schema::citizenship_applications, graph::context::UniqueContext};
+use crate::{graph::context::UniqueContext};
 
-#[derive(Clone, Debug, Serialize, Deserialize, Identifiable, Queryable, Insertable)]
+use super::{applications::Application, utils::jsonb::JsonB, schema::applications};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CitizenshipApplication {
     pub user_id: Uuid,
-    #[serde(with = "ts_milliseconds")]
-    pub submitted_date: DateTime<Utc>,
     #[serde(with = "ts_milliseconds")]
     pub date_of_birth: DateTime<Utc>,
     pub sex: String,
@@ -23,11 +22,9 @@ pub struct CitizenshipApplication {
     pub country_of_residence: String,
     pub ethnic_groups: Vec<String>,
     pub citizenship_status: CitizenshipStatus,
-    pub id: Uuid,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, diesel_derive_enum::DbEnum)]
-#[DieselTypePath = "crate::models::schema::sql_types::CitizenshipStatus"]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CitizenshipStatus {
     Pending,
     Approved,
@@ -53,14 +50,13 @@ impl CitizenshipApplication {
     pub async fn create_citizenship_application(
         context: &UniqueContext,
         input: CitizenshipApplicationInput,
-    ) -> FieldResult<CitizenshipApplication> {
+    ) -> FieldResult<Uuid> {
         let user = context.user()?;
         let conn = &mut context.diesel_pool.get().await?;
 
-        let application = CitizenshipApplication {
+        let citizenship_application = CitizenshipApplication {
             citizenship_status: CitizenshipStatus::Pending,
             user_id: user.id,
-            submitted_date: Utc::now(),
             date_of_birth: input.date_of_birth,
             first_name: input.first_name,
             last_name: input.last_name,
@@ -70,17 +66,21 @@ impl CitizenshipApplication {
             country_of_birth: input.country_of_birth,
             country_of_residence: input.country_of_residence,
             ethnic_groups: input.ethnic_groups,
-            id: Uuid::new_v4(),
             sex: input.sex,
         };
 
-        // Ok(diesel::insert_into(citizenship_applications::table)
-        //     .values(&application)
-        //     .get_result(conn)
-        //     .await?)
+        let application = Application {
+            id: Uuid::new_v4(),
+            created_at: Utc::now(),
+            application: JsonB(citizenship_application),
+        };
 
-        Ok(application)
+        diesel::insert_into(applications::table)
+            .values(&application)
+            .execute(conn)
+            .await?;
 
+        Ok(application.id)
     }
 }
 
@@ -88,7 +88,7 @@ impl CitizenshipApplication {
     context = UniqueContext
 )]
 impl CitizenshipApplication {
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn user_id(&self) -> Uuid {
+        self.user_id
     }
 }

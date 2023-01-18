@@ -15,8 +15,6 @@ use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::flexible_application::{Application, ApplicationType};
-
 #[derive(Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable)]
 pub struct User {
     pub id: Uuid,
@@ -38,12 +36,6 @@ pub struct User {
 impl User {
     fn id(&self) -> Uuid {
         self.id
-    }
-    fn applications(&self, filter_type: Option<ApplicationType>) -> Vec<Application> {
-        // TODO get the user's applications
-        // if filter_type is present, return only specific ones
-        // remember to authenticate user
-        vec![]
     }
 }
 
