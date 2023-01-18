@@ -1,10 +1,9 @@
 use juniper::GraphQLObject;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(GraphQLObject, Clone, Debug, Serialize, Deserialize)]
 pub struct CrackSeconds {
-    pub guesses: i32,
+    pub guesses: f64,
     pub seconds: f64,
     pub string: String,
 }

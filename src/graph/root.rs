@@ -43,7 +43,7 @@ impl Query {
         let guesses = match zxcvbn::zxcvbn(&password, &[]) {
             Ok(entropy) => entropy.guesses(),
             Err(_) => 0,
-        };
+        } as f64;
 
         Ok(CrackSeconds {
             guesses,
@@ -134,7 +134,7 @@ impl Mutation {
     //     // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
     //     Ok(true)
     // }
-   async fn create_citizenship_application(
+    async fn create_citizenship_application(
         &self,
         context: &UniqueContext,
         citizenship_application: CitizenshipApplicationInput,

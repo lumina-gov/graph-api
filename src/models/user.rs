@@ -34,9 +34,39 @@ pub struct User {
     context = UniqueContext
 )]
 impl User {
+    //TODO make this easier with a macro, see mod.rs
     fn id(&self) -> Uuid {
         self.id
     }
+    fn email(&self) -> String {
+        self.email.clone()
+    }
+    fn first_name(&self) -> String {
+        self.email.clone()
+    }
+    fn last_name(&self) -> String {
+        self.last_name.clone()
+    }
+    fn roles(&self) -> Vec<String> {
+        //TODO frontend wants an array of roles, so implement as an array
+        match &self.role {
+            Some(role) => vec![role.clone()],
+            None => vec![],
+        }
+    }
+    fn referrals(&self) -> i32 {
+        //TODO
+        0
+    }
+    fn citizenship_status(&self) -> Option<String> {
+        Some("TODO".to_owned())
+    }
+    // fn applications(&self, filter_type: Option<ApplicationType>) -> Vec<Application> {
+    //     // TODO get the user's applications
+    //     // if filter_type is present, return only specific ones
+    //     // remember to authenticate user
+    //     vec![]
+    // }
 }
 
 impl User {
