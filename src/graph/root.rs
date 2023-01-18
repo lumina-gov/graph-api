@@ -43,7 +43,7 @@ impl Query {
         let guesses = match zxcvbn::zxcvbn(&password, &[]) {
             Ok(entropy) => entropy.guesses(),
             Err(_) => 0,
-        } as i32;
+        };
 
         Ok(CrackSeconds {
             guesses,
