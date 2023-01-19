@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc, serde::ts_milliseconds};
 use diesel_async::RunQueryDsl;
-use juniper::{GraphQLInputObject, FieldResult, graphql_object};
+use juniper::{GraphQLInputObject, FieldResult, graphql_object, GraphQLEnum};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use crate::{graph::context::UniqueContext};
@@ -24,7 +24,7 @@ pub struct CitizenshipApplication {
     pub citizenship_status: CitizenshipStatus,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, GraphQLEnum)]
 pub enum CitizenshipStatus {
     Pending,
     Approved,
@@ -73,6 +73,7 @@ impl CitizenshipApplication {
             id: Uuid::new_v4(),
             created_at: Utc::now(),
             application: JsonB(citizenship_application),
+            application_type: "citizenship".to_string(),
         };
 
         diesel::insert_into(applications::table)

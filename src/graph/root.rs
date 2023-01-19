@@ -34,6 +34,7 @@ pub fn create_schema() -> Schema {
     // We need to do this in every type that
     // needs access to the context.
     context = UniqueContext
+    rename_all = "none"
 )]
 impl Query {
     /// Returns the crack time of a password
@@ -91,6 +92,7 @@ impl Query {
 
 #[graphql_object(
     context = UniqueContext
+    rename_all = "none"
 )]
 impl Mutation {
     fn test() -> String {
@@ -124,16 +126,6 @@ impl Mutation {
         User::login_user(context, login_user).await
     }
 
-    // commented this out while I get citizenship applications working
-    // fn submit_application(
-    //     context: &UniqueContext,
-    //     bson: String,
-    // ) -> FieldResult<bool> {
-    //     // TODO:
-    //     // 1. Check that user has no applications that are of application_type, else Error()
-    //     // 2. Insert user_id, application_type, bson and status = received into the flexible_applications table
-    //     Ok(true)
-    // }
     async fn create_citizenship_application(
         &self,
         context: &UniqueContext,

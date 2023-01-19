@@ -5,7 +5,7 @@ use crate::graph::context::UniqueContext;
 use crate::models::schema::users;
 use chrono::serde::ts_milliseconds;
 use chrono::{DateTime, Utc};
-use diesel::ExpressionMethods;
+use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
 use diesel::{
     result::DatabaseErrorKind, Identifiable, Insertable, OptionalExtension, QueryDsl, Queryable,
 };
@@ -14,6 +14,10 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use super::applications::Application;
+use super::citizenship_application::{CitizenshipStatus, CitizenshipApplication};
+use super::utils::jsonb::JsonB;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable)]
 pub struct User {
@@ -34,10 +38,10 @@ pub struct User {
 }
 
 #[graphql_object(
-    context = UniqueContext
+    context = UniqueContext,
+    rename_all = "none"
 )]
 impl User {
-    //TODO make this easier with a macro, see mod.rs
     fn id(&self) -> Uuid {
         self.id
     }
@@ -57,19 +61,38 @@ impl User {
             None => vec![],
         }
     }
-    fn referrals(&self) -> i32 {
-        //TODO
-        0
+    async fn referrals(&self, context: &UniqueContext) -> FieldResult<i32> {
+        let conn = &mut context.diesel_pool.get().await?;
+
+        let count: i64 = users::table
+            .filter(users::referrer.eq(self.id))
+            .count()
+            .get_result(conn)
+            .await?;
+
+        Ok(count as i32)
     }
-    fn citizenship_status(&self) -> Option<String> {
-        Some("TODO".to_owned())
+    async fn citizenship_status(&self, context: &UniqueContext) -> FieldResult<CitizenshipStatus> {
+        use super::schema::applications::dsl::*;
+
+        let conn = &mut context.diesel_pool.get().await?;
+
+        let citizenship_status = applications
+            .filter(application_type.eq("citizenship"))
+            .filter(application.contains(&serde_json::json!({ "user_id": self.id })))
+            .order_by(created_at.desc())
+            .first::<Application<CitizenshipApplication>>(conn)
+            .await
+            .optional()?;
+
+        match citizenship_status {
+            Some(Application {
+                application: JsonB(CitizenshipApplication { citizenship_status, .. }),
+                ..
+            }) => Ok(citizenship_status),
+            None => Ok(CitizenshipStatus::Pending),
+        }
     }
-    // fn applications(&self, filter_type: Option<ApplicationType>) -> Vec<Application> {
-    //     // TODO get the user's applications
-    //     // if filter_type is present, return only specific ones
-    //     // remember to authenticate user
-    //     vec![]
-    // }
 }
 
 impl User {
@@ -169,8 +192,8 @@ impl User {
         token: String,
     ) -> FieldResult<User> {
         // We want to use a "sliding window" token so there is no direct expiry time.
-        // We use the database to store the "last used" time of the token.
-        // This means if a user constantly uses the same token they will not be logged out.
+        // We will use the database to store the "last used" time of the token.
+        // This means if a user constantly uses the same token within the window they will not be logged out.
 
         let mut validation = Validation::new(Algorithm::HS256);
         // remove default required_spec_claims

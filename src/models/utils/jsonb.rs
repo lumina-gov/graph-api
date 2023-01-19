@@ -1,5 +1,5 @@
 //! Implements utility type for JSON, JSONB field handling in diesel
-use diesel::deserialize::FromSqlRow;
+use diesel::deserialize::{FromSqlRow, FromStaticSqlRow};
 use diesel::expression::AsExpression;
 use diesel::pg::Pg;
 use diesel::{sql_types};
@@ -22,13 +22,13 @@ use std::ops::{Deref, DerefMut};
 ///          diesel::Queryable, diesel::Insertable)]
 /// pub struct ExampleTable {
 ///     // Field that will be stored in Json, Jsonb format
-///     pub jsonb_field: jsonB<ComplexStruct>,
+///     pub jsonb_field: JsonB<ComplexStruct>,
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone, AsExpression)]
+#[derive(Serialize, Deserialize, Debug, Clone, AsExpression, FromSqlRow, PartialEq)]
 #[serde(transparent)]
 #[sql_type = "sql_types::Jsonb"]
-pub struct JsonB<T: Sized>(pub T);
+pub struct JsonB<T>(pub T);
 
 impl<T> JsonB<T> {
     pub fn new(value: T) -> JsonB<T> {
@@ -72,8 +72,6 @@ where
     }
 }
 
-
-
 impl<T> ToSql<sql_types::Jsonb, Pg> for JsonB<T>
 where
     T: std::fmt::Debug + Serialize,
@@ -89,26 +87,9 @@ where
     }
 }
 
-impl<T> PartialEq for JsonB<T>
-where
-    T: PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<T: DeserializeOwned> FromSqlRow<sql_types::Jsonb, Pg> for JsonB<T> {
-    fn build_from_row<'a>(row: &impl diesel::row::Row<'a, Pg>) -> diesel::deserialize::Result<Self> {
-        let value = <serde_json::Value as FromSqlRow<sql_types::Jsonb, Pg>>::build_from_row(row)?;
-        Ok(JsonB(serde_json::from_value::<T>(value)?))
-    }
-}
-
-// impl<T: DeserializeOwned> AsExpression<sql_types::Jsonb> for JsonB<T> {
-
-
-//     fn as_expression(self) -> Self::Expression {
-//         diesel::expression::bound::Bound::new(self, sql_types::Jsonb)
+// impl<T: DeserializeOwned> FromSqlRow<sql_types::Jsonb, Pg> for JsonB<T> {
+//     fn build_from_row<'a>(row: &impl diesel::row::Row<'a, Pg>) -> diesel::deserialize::Result<Self> {
+//         let value = <serde_json::Value as FromSqlRow<sql_types::Jsonb, Pg>>::build_from_row(row)?;
+//         Ok(JsonB(serde_json::from_value::<T>(value)?))
 //     }
 // }

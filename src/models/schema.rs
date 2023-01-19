@@ -5,6 +5,7 @@ diesel::table! {
         id -> Uuid,
         created_at -> Timestamptz,
         application -> Jsonb,
+        application_type -> Varchar,
     }
 }
 

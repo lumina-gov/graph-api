@@ -240,6 +240,7 @@ mod tests {
                         application: JsonB(application_data),
                         created_at: document.submitted_date,
                         id: uuid::Uuid::new_v4(),
+                        application_type: "citizenship".to_string(),
                     };
 
                     let result = diesel::insert_into(crate::models::schema::applications::table)
