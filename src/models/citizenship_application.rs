@@ -32,6 +32,7 @@ pub enum CitizenshipStatus {
 }
 
 #[derive(GraphQLInputObject, Clone, Debug, Serialize, Deserialize)]
+#[graphql(rename_all = "none")]
 pub struct CitizenshipApplicationInput {
     #[serde(with = "ts_milliseconds")]
     pub date_of_birth: DateTime<Utc>,
