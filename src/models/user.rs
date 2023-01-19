@@ -49,7 +49,7 @@ impl User {
         self.email.clone()
     }
     fn first_name(&self) -> String {
-        self.email.clone()
+        self.first_name.clone()
     }
     fn last_name(&self) -> String {
         self.last_name.clone()
