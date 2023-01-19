@@ -9,6 +9,7 @@ use crate::models::course::Course;
 
 #[derive(GraphQLObject, Serialize, Deserialize, Identifiable, Queryable, Debug, Associations)]
 #[diesel(belongs_to(Course))]
+#[graphql(rename_all = "none")]
 pub struct Unit {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub name: String,
