@@ -28,6 +28,9 @@ pub struct User {
     pub country_code: String,
     pub phone_number: String,
     pub role: Option<String>,
+    pub object_id: Option<String>,
+    pub referrer: Option<Uuid>,
+    pub referrer_mongo: Option<String>,
 }
 
 #[graphql_object(
@@ -91,6 +94,9 @@ impl User {
             calling_code: create_user.calling_code,
             country_code: create_user.country_code,
             phone_number: create_user.phone_number,
+            referrer: None,
+            object_id: None,
+            referrer_mongo: None,
             role: None,
         };
 

@@ -1,11 +1,11 @@
-mod error;
-mod graph;
-mod models;
+pub mod error;
+pub mod graph;
+pub mod models;
 
 use std::sync::Arc;
 
 use dotenv;
-use graph::{
+pub use graph::{
     context::GeneralContext,
     root::{self, Schema},
 };
@@ -98,4 +98,159 @@ async fn main() -> Result<(), Error> {
         async move { function_handler(event, &schema, &context).await }
     }))
     .await
+}
+
+
+mod tests {
+    use chrono::{DateTime, Utc};
+    use diesel::QueryDsl;
+    use diesel_async::RunQueryDsl;
+    use juniper::futures::StreamExt;
+    use mongodb::{Client, Collection, bson::oid::ObjectId, options::FindOptions};
+
+    use crate::models::applications::Application;
+    use crate::models::user::User;
+    use crate::models::schema::users::dsl::*;
+    use crate::models::utils::jsonb::JsonB;
+    use diesel::ExpressionMethods;
+
+    #[ignore]
+    #[tokio::test]
+    async fn migration() -> Result<(), anyhow::Error> {
+        let mut client = Client::with_uri_str("").await?;
+        let db = client.database("production");
+
+        dotenv::dotenv().ok();
+        let context = crate::graph::context::GeneralContext::new().await?;
+        let unique_context = context.new_unique_context().await;
+
+        let mut conn = unique_context.diesel_pool.get().await?;
+
+        // #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+        // struct MongoUser {
+        //     pub _id: ObjectId,
+        //     pub emails: Vec<EmailData>,
+        //     #[serde(with = "chrono::serde::ts_milliseconds")]
+        //     pub joined: DateTime<Utc>,
+        //     pub password: String,
+        //     pub first_name: String,
+        //     pub last_name: String,
+        //     pub calling_code: String,
+        //     pub country_code: String,
+        //     pub phone_number: String,
+        //     pub referrer: Option<ObjectId>,
+        //     pub roles: Option<Vec<String>>,
+        // }
+
+        // #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+        // pub struct EmailData {
+        //     email: String,
+        //     verified: bool,
+        // }
+
+        // let coll: Collection<MongoUser> = db.collection("users");
+
+        // let mut cursor = coll.find(None, FindOptions::builder().limit(0).build()).await?;
+        // while let Some(result) = cursor.next().await {
+        //     match result {
+        //         Ok(document) => {
+        //             let user = User {
+        //                 id: uuid::Uuid::new_v4(),
+        //                 email: document.emails[0].email.clone(),
+        //                 first_name: document.first_name.clone(),
+        //                 last_name: document.last_name.clone(),
+        //                 calling_code: document.calling_code.clone(),
+        //                 country_code: document.country_code.clone(),
+        //                 phone_number: document.phone_number.clone(),
+        //                 password: document.password.clone(),
+        //                 referrer: None,
+        //                 role: document.roles.map(|roles| roles.get(0).cloned()).flatten(),
+        //                 referrer_mongo: document.referrer.map(|other_id| other_id.to_hex()),
+        //                 object_id: Some(document._id.to_hex()),
+        //                 joined: document.joined,
+        //             };
+
+        //             let result = diesel::insert_into(users)
+        //                 .values(&user)
+        //                 .execute(&mut conn)
+        //                 .await?;
+        //         }
+        //         Err(e) => println!("Error {:?}", e),
+        //     }
+        // }
+
+        // now we want to get the citizenship_applications from mongo
+        // find the user by the object_id, and reinsert the citizenship_applications into postgres
+        // with the user_id from postgres
+        #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+        struct MongoCitizenshipApplicaiton {
+            pub _id: ObjectId,
+            pub user_id: ObjectId,
+            #[serde(with = "chrono::serde::ts_milliseconds")]
+            pub submitted_date: DateTime<Utc>,
+            #[serde(with = "chrono::serde::ts_milliseconds")]
+            pub date_of_birth: DateTime<Utc>,
+            pub sex: String,
+            pub first_name: String,
+            pub last_name: String,
+            pub skills: Vec<String>,
+            pub occupations: Vec<String>,
+            pub country_of_citizenship: Vec<String>,
+            pub country_of_birth: String,
+            pub country_of_residence: String,
+            pub ethnic_groups: Vec<String>,
+            pub citizenship_status: MongoCitizenshipStatus,
+        }
+
+        #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+        pub enum MongoCitizenshipStatus {
+            Pending,
+            Approved,
+            Rejected,
+        }
+
+        let coll: Collection<MongoCitizenshipApplicaiton> = db.collection("citizenship_applications");
+
+        let mut cursor = coll.find(None, FindOptions::builder().limit(0).build()).await?;
+
+        while let Some(result) = cursor.next().await {
+            match result {
+                Ok(document) => {
+                    let user = users
+                        .filter(object_id.eq(document.user_id.to_hex()))
+                        .first::<User>(&mut conn)
+                        .await?;
+
+                    let application_data = crate::models::citizenship_application::CitizenshipApplication {
+                        user_id: user.id,
+                        date_of_birth: document.date_of_birth,
+                        sex: document.sex,
+                        first_name: document.first_name,
+                        last_name: document.last_name,
+                        skills: document.skills,
+                        occupations: document.occupations,
+                        country_of_citizenship: document.country_of_citizenship,
+                        country_of_birth: document.country_of_birth,
+                        country_of_residence: document.country_of_residence,
+                        citizenship_status: crate::models::citizenship_application::CitizenshipStatus::Pending,
+                        ethnic_groups: document.ethnic_groups,
+                    };
+
+                    let application = Application {
+                        application: JsonB(application_data),
+                        created_at: document.submitted_date,
+                        id: uuid::Uuid::new_v4(),
+                    };
+
+                    let result = diesel::insert_into(crate::models::schema::applications::table)
+                        .values(&application)
+                        .execute(&mut conn)
+                        .await?;
+                }
+                Err(e) => println!("Error {:?}", e),
+            }
+        }
+
+        Ok(())
+    }
 }

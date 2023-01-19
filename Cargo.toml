@@ -27,3 +27,4 @@ bcrypt = "0.13.0"
 # 2.0.0-rc.0 is the latest version that supports diesel 2.0
 diesel-derive-enum = { version = "2.0.0-rc.0", features = ["postgres"] }
 zxcvbn = "2.2.1"
+mongodb = "2.3.1"
