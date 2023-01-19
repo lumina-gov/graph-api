@@ -224,6 +224,7 @@ impl User {
 }
 
 #[derive(Debug, Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(rename_all = "none")]
 pub struct CreateUserInput {
     pub email: String,
     pub password: String,
@@ -236,6 +237,7 @@ pub struct CreateUserInput {
 }
 
 #[derive(Debug, Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(rename_all = "none")]
 pub struct LoginUserInput {
     pub email: String,
     pub password: String,
