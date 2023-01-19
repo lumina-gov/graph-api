@@ -85,8 +85,8 @@ impl Query {
         Ok(data.ok())
     }
 
-    async fn me(context: &UniqueContext) -> FieldResult<User> {
-        context.user()
+    async fn me(context: &UniqueContext) -> Option<User> {
+        context.user().ok()
     }
 }
 
