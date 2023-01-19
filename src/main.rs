@@ -29,7 +29,7 @@ async fn function_handler(
             .status(200)
             .header("Access-Control-Allow-Origin", "*")
             .header("Access-Control-Allow-Methods", "POST")
-            .header("Access-Control-Allow-Headers", "Content-Type")
+            .header("Access-Control-Allow-Headers", "*")
             .body(Body::Empty),
         "POST" => {
             // get token from header
@@ -65,6 +65,8 @@ async fn function_handler(
                 .status(200)
                 .header("content-type", "application/json")
                 .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "POST")
+                .header("Access-Control-Allow-Headers", "*")
                 .body(json.into())
         }
         _ => response
