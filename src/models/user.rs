@@ -232,6 +232,7 @@ pub struct CreateUserInput {
     pub calling_code: String,
     pub country_code: String,
     pub phone_number: String,
+    pub referrer: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, GraphQLInputObject)]
