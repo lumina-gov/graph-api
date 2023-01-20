@@ -61,7 +61,7 @@ impl User {
             None => vec![],
         }
     }
-    async fn referrals(&self, context: &UniqueContext) -> FieldResult<i32> {
+    async fn referral_count(&self, context: &UniqueContext) -> FieldResult<i32> {
         let conn = &mut context.diesel_pool.get().await?;
 
         let count: i64 = users::table
