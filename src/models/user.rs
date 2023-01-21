@@ -72,7 +72,7 @@ impl User {
 
         Ok(count as i32)
     }
-    async fn citizenship_status(&self, context: &UniqueContext) -> FieldResult<CitizenshipStatus> {
+    async fn citizenship_status(&self, context: &UniqueContext) -> FieldResult<Option<CitizenshipStatus>> {
         use super::schema::applications::dsl::*;
 
         let conn = &mut context.diesel_pool.get().await?;
@@ -89,8 +89,8 @@ impl User {
             Some(Application {
                 application: JsonB(CitizenshipApplication { citizenship_status, .. }),
                 ..
-            }) => Ok(citizenship_status),
-            None => Ok(CitizenshipStatus::Pending),
+            }) => Ok(Some(citizenship_status)),
+            None => Ok(None),
         }
     }
 }
