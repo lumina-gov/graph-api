@@ -99,7 +99,7 @@ impl User {
         }
     }
 
-    async fn stripe_billing_portal_url_session(&self, context: &UniqueContext, input: StripeBillingPortalInput) -> FieldResult<String> {
+    async fn customer_portal_url(&self, context: &UniqueContext, input: StripeBillingPortalInput) -> FieldResult<String> {
         let stripe_customer_id = self.stripe_customer_id(context).await?;
         let client = get_stripe_client();
 
