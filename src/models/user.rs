@@ -99,22 +99,17 @@ impl User {
         }
     }
 
-    async fn customer_portal_url(&self, context: &UniqueContext, input: StripeBillingPortalInput) -> FieldResult<String> {
+    async fn customer_portal_url(&self, context: &UniqueContext, return_url: Option<String>) -> FieldResult<String> {
         let stripe_customer_id = self.stripe_customer_id(context).await?;
         let client = get_stripe_client();
 
         let mut session = CreateBillingPortalSession::new(stripe::CustomerId::from_str(&stripe_customer_id)?);
-        session.return_url = input.return_url.as_ref().map(|url| &**url);
+        session.return_url = return_url.as_ref().map(|url| &**url);
 
         let session = stripe::BillingPortalSession::create(&client, session).await?;
 
         Ok(session.url)
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, GraphQLInputObject)]
-struct StripeBillingPortalInput {
-    return_url: Option<String>,
 }
 
 impl User {
