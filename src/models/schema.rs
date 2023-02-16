@@ -10,6 +10,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    bank (id) {
+        created_at -> Nullable<Timestamptz>,
+        name -> Text,
+        account_number -> Text,
+        id -> Int8,
+    }
+}
+
+diesel::table! {
     course_progress (id) {
         id -> Int4,
         course_id -> Uuid,
@@ -44,6 +53,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    transactions (id) {
+        id -> Uuid,
+        created_at -> Nullable<Timestamptz>,
+        amount -> Nullable<Numeric>,
+        from -> Nullable<Int8>,
+        to -> Nullable<Int8>,
+    }
+}
+
+diesel::table! {
     units (id) {
         created_at -> Timestamptz,
         name -> Varchar,
@@ -51,6 +70,7 @@ diesel::table! {
         parent_unit -> Nullable<Uuid>,
         course_id -> Uuid,
         slug -> Text,
+        notion_page_id -> Nullable<Varchar>,
     }
 }
 
@@ -80,10 +100,12 @@ diesel::joinable!(units -> courses (course_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     applications,
+    bank,
     course_progress,
     course_to_creator,
     courses,
     creators,
+    transactions,
     units,
     users,
 );

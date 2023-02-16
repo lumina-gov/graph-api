@@ -17,4 +17,5 @@ pub struct Unit {
     pub parent_unit: Option<Uuid>,
     pub course_id: Uuid,
     pub slug : String,
+    pub notion_page_id: Option<String>,
 }

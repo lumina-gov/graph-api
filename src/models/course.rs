@@ -43,23 +43,6 @@ impl Course {
     }
 }
 
-// #[derive(Serialize, Deserialize, Identifiable, Queryable, Debug)]
-// struct CourseProgress {
-//     id: i32,
-//     course_id: Uuid,
-//     user_id: Uuid,
-//     credits: i32,
-// }
-
-// #[derive(GraphQLObject, Serialize, Deserialize, Identifiable, Queryable, Debug, Associations)]
-// #[diesel(belongs_to(Course))]
-// #[diesel(belongs_to(User))]
-// pub struct CourseProgress {
-//     pub id: i32,
-//     pub credits: i32,
-//     pub course: Course,
-// }
-
 #[derive(GraphQLInputObject, Serialize, Deserialize, Debug)]
 pub struct CreateCourseInput {
     pub name: String,
