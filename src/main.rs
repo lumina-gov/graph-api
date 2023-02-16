@@ -1,6 +1,7 @@
 pub mod error;
 pub mod graph;
 pub mod models;
+pub mod stripe;
 
 use std::sync::Arc;
 

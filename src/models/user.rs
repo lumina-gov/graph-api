@@ -1,8 +1,11 @@
+use std::borrow::Borrow;
+use std::str::FromStr;
 use std::time::SystemTime;
 
 use crate::error::ErrorCode;
 use crate::graph::context::UniqueContext;
 use crate::models::schema::users;
+use crate::stripe::get_stripe_client;
 use chrono::serde::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
@@ -13,6 +16,7 @@ use diesel_async::RunQueryDsl;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 use serde::{Deserialize, Serialize};
+use stripe::CreateBillingPortalSession;
 use uuid::Uuid;
 
 use super::applications::Application;
@@ -35,6 +39,7 @@ pub struct User {
     pub object_id: Option<String>,
     pub referrer: Option<Uuid>,
     pub referrer_mongo: Option<String>,
+    pub stripe_customer_id: Option<String>,
 }
 
 #[graphql_object(
@@ -93,6 +98,23 @@ impl User {
             None => Ok(None),
         }
     }
+
+    async fn stripe_billing_portal_url_session(&self, context: &UniqueContext, input: StripeBillingPortalInput) -> FieldResult<String> {
+        let stripe_customer_id = self.stripe_customer_id(context).await?;
+        let client = get_stripe_client();
+
+        let mut session = CreateBillingPortalSession::new(stripe::CustomerId::from_str(&stripe_customer_id)?);
+        session.return_url = input.return_url.as_ref().map(|url| &**url);
+
+        let session = stripe::BillingPortalSession::create(&client, session).await?;
+
+        Ok(session.url)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, GraphQLInputObject)]
+struct StripeBillingPortalInput {
+    return_url: Option<String>,
 }
 
 impl User {
@@ -121,6 +143,7 @@ impl User {
             object_id: None,
             referrer_mongo: None,
             role: None,
+            stripe_customer_id: None,
         };
 
         match diesel::insert_into(users::table)
@@ -218,6 +241,33 @@ impl User {
             Err(e) => {
                 tracing::error!("Invalid auth token: {}", e);
                 Err(ErrorCode::InvalidToken.into())
+            }
+        }
+    }
+
+    pub async fn stripe_customer_id(
+        &self,
+        context: &UniqueContext,
+    ) -> FieldResult<String> {
+        match &self.stripe_customer_id {
+            Some(customer_id) => Ok(customer_id.clone()),
+            None => {
+                let client = get_stripe_client();
+
+                let customer = stripe::Customer::create(&client, stripe::CreateCustomer {
+                    name: Some(&format!("{} {}", self.first_name, self.last_name)),
+                    email: Some(&self.email),
+                    ..Default::default()
+                }).await?;
+
+                let conn = &mut context.diesel_pool.get().await?;
+
+                diesel::update(users::table.find(self.id))
+                    .set(users::stripe_customer_id.eq(customer.id.to_string()))
+                    .execute(conn)
+                    .await?;
+
+                Ok(customer.id.to_string())
             }
         }
     }

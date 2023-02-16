@@ -89,6 +89,7 @@ diesel::table! {
         object_id -> Nullable<Varchar>,
         referrer -> Nullable<Uuid>,
         referrer_mongo -> Nullable<Varchar>,
+        stripe_customer_id -> Nullable<Varchar>,
     }
 }
 
