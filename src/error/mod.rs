@@ -9,6 +9,7 @@ pub enum ErrorCode {
     CouldNotCreateToken,
     FailedToHashPassword,
     Unauthenticated,
+    CouldNotCreateCheckoutSession,
 }
 
 impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
@@ -22,6 +23,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                 Self::CouldNotCreateToken => "Could not create authentication token",
                 Self::FailedToHashPassword => "Could not hash password",
                 Self::Unauthenticated => "You are not authenticated",
+                Self::CouldNotCreateCheckoutSession => "Could not create checkout session",
             },
             // These codes should never change
             // as they are used by the frontend to handle errors
@@ -34,6 +36,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                     ErrorCode::CouldNotCreateToken => "COULD_NOT_CREATE_TOKEN",
                     ErrorCode::FailedToHashPassword => "FAILED_TO_HASH_PASSWORD",
                     ErrorCode::Unauthenticated => "UNAUTHENTICATED",
+                    ErrorCode::CouldNotCreateCheckoutSession => "COULD_NOT_CREATE_CHECKOUT_SESSION",
                 }
             })
         )

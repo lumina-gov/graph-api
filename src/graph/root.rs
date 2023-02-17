@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
@@ -7,10 +10,12 @@ use crate::models::unit::Unit;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
+use crate::stripe::get_stripe_client;
 use diesel::insert_into;
 use diesel::QueryDsl;
 use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
+use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
 use uuid::Uuid;
 use zxcvbn::time_estimates::CrackTimeSeconds;
@@ -148,5 +153,35 @@ impl Mutation {
     ) -> FieldResult<Uuid> {
         CitizenshipApplication::create_citizenship_application(context, citizenship_application)
             .await
+    }
+
+    async fn create_light_university_checkout_session(
+        &self,
+        context: &UniqueContext,
+        success_url: String,
+    ) -> FieldResult<String> {
+        let user = &context.user;
+        let stripe_customer_id = match user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user.stripe_customer_id(context).await?,
+        };
+
+        let client = get_stripe_client();
+        let mut create_session = stripe::CreateCheckoutSession::new(&success_url);
+        create_session.customer = Some(stripe::CustomerId::from_str(&stripe_customer_id)?);
+        create_session.mode = Some(stripe::CheckoutSessionMode::Subscription);
+        create_session.line_items = Some(vec![
+            stripe::CreateCheckoutSessionLineItems {
+                price: Some(String::from(dotenv::var("LIGHT_UNIVERSITY_PRICE_ID").expect("LIGHT_UNIVERSITY_PRICE_ID not set"))),
+                quantity: Some(1),
+                ..Default::default()
+            },
+        ]);
+
+        let session = stripe::CheckoutSession::create(&client, create_session).await?;
+        match session.url {
+            None => return Err(ErrorCode::CouldNotCreateCheckoutSession.into_field_error()),
+            Some(url) => Ok(url),
+        }
     }
 }
