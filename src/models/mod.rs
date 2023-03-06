@@ -17,3 +17,4 @@ pub mod schema;
 pub mod unit;
 pub mod user;
 pub mod utils;
+pub mod enrollments;

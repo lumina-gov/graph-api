@@ -52,3 +52,15 @@ Run the following commands in order
 2. Install diesel-cli with `cargo install diesel_cli --no-default-features --features postgres`.
 
 3. Run `diesel print-schema > src/models/schema.rs`.
+
+### Generating Migrations
+
+`diesel migration generate migration_name_here`
+
+`diesel migration run`
+
+`diesel migration revert` to go back one migration
+
+`diesel migration redo` to go back one migration and then forward again
+
+Then run the step to print the schema as shown above

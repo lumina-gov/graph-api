@@ -10,6 +10,8 @@ pub enum ErrorCode {
     FailedToHashPassword,
     Unauthenticated,
     CouldNotCreateCheckoutSession,
+    CouldNotEnroll,
+    CourseNotFound,
 }
 
 impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
@@ -24,6 +26,8 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                 Self::FailedToHashPassword => "Could not hash password",
                 Self::Unauthenticated => "You are not authenticated",
                 Self::CouldNotCreateCheckoutSession => "Could not create checkout session",
+                Self::CouldNotEnroll => "Could not enroll user",
+                Self::CourseNotFound => "Course not found",
             },
             // These codes should never change
             // as they are used by the frontend to handle errors
@@ -37,6 +41,8 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                     ErrorCode::FailedToHashPassword => "FAILED_TO_HASH_PASSWORD",
                     ErrorCode::Unauthenticated => "UNAUTHENTICATED",
                     ErrorCode::CouldNotCreateCheckoutSession => "COULD_NOT_CREATE_CHECKOUT_SESSION",
+                    ErrorCode::CouldNotEnroll => "COULD_NOT_ENROLL",
+                    ErrorCode::CourseNotFound => "COURSE_NOT_FOUND",
                 }
             })
         )

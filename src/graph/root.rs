@@ -4,14 +4,13 @@ use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
 use crate::models::course::Course;
-use crate::models::course::CourseInsertable;
-use crate::models::course::CreateCourseInput;
+use crate::models::enrollments::Enrollment;
+use crate::models::schema::courses;
 use crate::models::unit::Unit;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
 use crate::stripe::get_stripe_client;
-use diesel::insert_into;
 use diesel::QueryDsl;
 use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
@@ -118,21 +117,6 @@ impl Mutation {
     fn test() -> String {
         "Hello World!".into()
     }
-    async fn create_course(
-        context: &UniqueContext,
-        course: CreateCourseInput,
-    ) -> FieldResult<Course> {
-        use crate::models::schema::courses::dsl::*;
-
-        let conn = &mut context.diesel_pool.get().await?;
-        Ok(insert_into(courses)
-            .values(CourseInsertable {
-                id: Uuid::new_v4(),
-                name: course.name,
-            })
-            .get_result(conn)
-            .await?)
-    }
 
     async fn create_user(
         context: &UniqueContext,
@@ -183,5 +167,29 @@ impl Mutation {
             None => return Err(ErrorCode::CouldNotCreateCheckoutSession.into_field_error()),
             Some(url) => Ok(url),
         }
+    }
+
+    async fn enroll_user_to_course(
+        &self,
+        context: &UniqueContext,
+        course_slug: String,
+    ) -> FieldResult<bool> {
+        let user = match &context.user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user,
+        };
+
+        let course = match courses::table
+            .filter(courses::slug.eq(course_slug))
+            .first::<Course>(&mut context.diesel_pool.get().await?)
+            .await
+            .optional()? {
+            None => return Err(ErrorCode::CourseNotFound.into_field_error()),
+            Some(course) => course,
+        };
+
+        Enrollment::enroll_user(context, user, &course).await?;
+
+        Ok(true)
     }
 }
