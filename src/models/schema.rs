@@ -54,6 +54,7 @@ diesel::table! {
         parent_unit -> Nullable<Uuid>,
         course_id -> Uuid,
         slug -> Text,
+        order -> Float8,
     }
 }
 
