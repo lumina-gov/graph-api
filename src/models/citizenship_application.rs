@@ -88,6 +88,7 @@ impl CitizenshipApplication {
 
 #[graphql_object(
     context = UniqueContext
+    rename_all = "none"
 )]
 impl CitizenshipApplication {
     pub fn user_id(&self) -> Uuid {

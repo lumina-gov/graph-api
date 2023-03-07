@@ -23,6 +23,7 @@ pub struct Course {
 
 #[graphql_object(
     context = UniqueContext
+    rename_all = "none"
 )]
 impl Course {
     pub fn id(&self) -> Uuid {

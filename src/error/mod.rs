@@ -16,6 +16,19 @@ pub enum ErrorCode {
 
 impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
     fn into_field_error(self) -> juniper::FieldError<S> {
+        let code = match &self {
+            ErrorCode::UserAlreadyExists => "USER_ALREADY_EXISTS",
+            ErrorCode::PasswordMismatch => "PASSWORD_MISMATCH",
+            ErrorCode::UserNotFound => "USER_NOT_FOUND",
+            ErrorCode::InvalidToken => "INVALID_TOKEN",
+            ErrorCode::CouldNotCreateToken => "COULD_NOT_CREATE_TOKEN",
+            ErrorCode::FailedToHashPassword => "FAILED_TO_HASH_PASSWORD",
+            ErrorCode::Unauthenticated => "UNAUTHENTICATED",
+            ErrorCode::CouldNotCreateCheckoutSession => "COULD_NOT_CREATE_CHECKOUT_SESSION",
+            ErrorCode::CouldNotEnroll => "COULD_NOT_ENROLL",
+            ErrorCode::CourseNotFound => "COURSE_NOT_FOUND",
+        };
+
         juniper::FieldError::new(
             match &self {
                 Self::UserAlreadyExists => "User already exists",
@@ -32,18 +45,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
             // These codes should never change
             // as they are used by the frontend to handle errors
             graphql_value!({
-                "code": match self {
-                    ErrorCode::UserAlreadyExists => "USER_ALREADY_EXISTS",
-                    ErrorCode::PasswordMismatch => "PASSWORD_MISMATCH",
-                    ErrorCode::UserNotFound => "USER_NOT_FOUND",
-                    ErrorCode::InvalidToken => "INVALID_TOKEN",
-                    ErrorCode::CouldNotCreateToken => "COULD_NOT_CREATE_TOKEN",
-                    ErrorCode::FailedToHashPassword => "FAILED_TO_HASH_PASSWORD",
-                    ErrorCode::Unauthenticated => "UNAUTHENTICATED",
-                    ErrorCode::CouldNotCreateCheckoutSession => "COULD_NOT_CREATE_CHECKOUT_SESSION",
-                    ErrorCode::CouldNotEnroll => "COULD_NOT_ENROLL",
-                    ErrorCode::CourseNotFound => "COURSE_NOT_FOUND",
-                }
+                "code": code
             })
         )
     }
