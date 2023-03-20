@@ -12,6 +12,7 @@ pub enum ErrorCode {
     CouldNotCreateCheckoutSession,
     CouldNotEnroll,
     CourseNotFound,
+    Custom(String, String),
 }
 
 impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
@@ -27,6 +28,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
             ErrorCode::CouldNotCreateCheckoutSession => "COULD_NOT_CREATE_CHECKOUT_SESSION",
             ErrorCode::CouldNotEnroll => "COULD_NOT_ENROLL",
             ErrorCode::CourseNotFound => "COURSE_NOT_FOUND",
+            ErrorCode::Custom(code, _) => code,
         };
 
         juniper::FieldError::new(
@@ -41,6 +43,7 @@ impl<S: ScalarValue> juniper::IntoFieldError<S> for ErrorCode {
                 Self::CouldNotCreateCheckoutSession => "Could not create checkout session",
                 Self::CouldNotEnroll => "Could not enroll user",
                 Self::CourseNotFound => "Course not found",
+                Self::Custom(_, msg) => msg,
             },
             // These codes should never change
             // as they are used by the frontend to handle errors

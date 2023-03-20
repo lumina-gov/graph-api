@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use std::str::FromStr;
 
 use crate::error::ErrorCode;
@@ -42,6 +43,11 @@ pub fn create_schema() -> Schema {
     rename_all = "none"
 )]
 impl Query {
+
+    async fn ping(&self) -> FieldResult<String> {
+        Ok("pong".to_string())
+    }
+
     /// Returns the crack time of a password
     /// Used for password strength estimation
     /// On the frontend
@@ -56,6 +62,53 @@ impl Query {
             seconds: guesses as f64 / 100_000.0,
             string: CrackTimeSeconds::Float(guesses as f64 / 100_000.0).to_string(),
         })
+    }
+
+    // Get the number of users grouped by their creation date, for a specified interval
+    // in months, and the count of intervals to go back in time.
+    // For example, if interval is 1 and count is 12, this will return the number of users
+    // created in the last 12 months, grouped by month.
+    async fn user_count_by_interval(
+        &self,
+        context: &UniqueContext,
+        interval: i32,
+        count: i32,
+    ) -> FieldResult<Vec<i32>> {
+        if count > 36 {
+            return Err(ErrorCode::Custom("BAD_REQUEST".into(), "Count must be below 36".into()).into_field_error());
+        }
+        if interval > 6 {
+            return Err(ErrorCode::Custom("BAD_REQUEST".into(), "Interval must be below 6".into()).into_field_error());
+        }
+
+        use crate::models::schema::users::dsl::*;
+
+        let mut conn = context.diesel_pool.get().await?;
+
+        // create a duration (interval * month)
+        let duration = chrono::Duration::days(interval as i64 * 30);
+
+        // get the current time
+        let now = chrono::Utc::now();
+
+        // for count times, get the number of users created in the last interval
+        let mut data = Vec::new();
+
+        for i in 0..count {
+            let start = now - duration * i;
+            let end = now - duration * (i + 1);
+
+            let count: i64 = users
+                .filter(joined.gt(end))
+                .filter(joined.lt(start))
+                .count()
+                .get_result(&mut conn)
+                .await?;
+
+            data.push(count as i32);
+        }
+
+        Ok(data)
     }
 
     async fn user_count(context: &UniqueContext) -> FieldResult<i32> {
