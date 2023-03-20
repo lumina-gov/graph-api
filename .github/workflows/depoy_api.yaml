@@ -36,4 +36,4 @@ jobs:
         # we might want to zip here instead of deploying as a binary
       - name: Deploy
         run:
-          cargo lambda deploy --iam-role arn:aws:iam::319923562419:role/cargo-lambda-role-f534bf82-46e3-4113-b8fe-66714d3d0b3f --binary-name graph-api graph-api-${GITHUB_REF##*/}
+          cargo lambda deploy --binary-name graph-api graph-api-${GITHUB_REF##*/}
