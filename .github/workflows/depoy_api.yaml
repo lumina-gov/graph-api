@@ -44,7 +44,7 @@ jobs:
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --binary-name graph-api \
             --tag lala=lala \
-            graph-api-${GITHUB_REF##*/}
+            graph-api-foobar
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
