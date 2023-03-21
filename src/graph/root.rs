@@ -1,6 +1,4 @@
-use std::ops::Mul;
 use std::str::FromStr;
-
 use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;

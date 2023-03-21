@@ -22,6 +22,7 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
+          version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build
@@ -34,6 +35,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
         # we might want to zip here instead of deploying as a binary
+      - name: lambda-version
+        run: cargo lambda --version
       - name: Deploy
-        run:
-          cargo lambda deploy --iam-role arn:aws:iam::739724808938:role/cargo-lambda-role-f534bf82-46e3-4113-b8fe-66714d3d0b3f --binary-name graph-api graph-api-${GITHUB_REF##*/}
+        run: |
+          cargo lambda deploy \
+            --env-var DATABASE_URL=$DATABASE_URL \
+            --env-var JWT_SECRET=$JWT_SECRET \
+            --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
+            --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
+            --binary-name graph-api \
+            graph-api-${GITHUB_REF##*/}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          LIGHT_UNIVERSITY_PRICE_ID: ${{ secrets.LIGHT_UNIVERSITY_PRICE_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}

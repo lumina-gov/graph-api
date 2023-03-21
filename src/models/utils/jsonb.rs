@@ -1,5 +1,5 @@
 //! Implements utility type for JSON, JSONB field handling in diesel
-use diesel::deserialize::{FromSqlRow, FromStaticSqlRow};
+use diesel::deserialize::{FromSqlRow};
 use diesel::expression::AsExpression;
 use diesel::pg::Pg;
 use diesel::{sql_types};
