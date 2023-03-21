@@ -43,6 +43,7 @@ jobs:
             --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --binary-name graph-api \
+            --tag lala=lala
             graph-api-${GITHUB_REF##*/}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
