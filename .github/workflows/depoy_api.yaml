@@ -37,7 +37,16 @@ jobs:
       - name: Deploy
         run: |
           cargo lambda deploy \
-            --iam-role arn:aws:iam::739724808938:role/cargo-lambda-role-f534bf82-46e3-4113-b8fe-66714d3d0b3f \
+            --iam-role arn:aws:iam::739724808938:role/cargo-lambda-role-33666a7a-7c5e-483b-8134-62c4b305e4d6 \
             --env-var BAR=BAR \
+            --env-var DATABASE_URL=$DATABASE_URL \
+            --env-var JWT_SECRET=$JWT_SECRET \
+            --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
+            --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --binary-name graph-api \
             graph-api-${GITHUB_REF##*/}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          LIGHT_UNIVERSITY_PRICE_ID: ${{ secrets.LIGHT_UNIVERSITY_PRICE_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
