@@ -83,7 +83,8 @@ pub struct App {
 
 impl App {
     pub async fn new() -> Result<Self, Error> {
-        dotenv::dotenv()?;
+        // There may or may not be a .env file, so we ignore the error.
+        dotenv::dotenv().ok();
 
         Ok(Self {
             schema: Arc::new(root::create_schema()),
