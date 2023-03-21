@@ -37,14 +37,10 @@ jobs:
       - name: Deploy
         run: |
           cargo lambda deploy \
-            --env-var BAR=BAR \
-            --env-var DATABASE_URL=$DATABASE_URL \
-            --env-var JWT_SECRET=$JWT_SECRET \
-            --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
-            --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
+            --env-vars FOO=FOO \
+
             --binary-name graph-api \
-            --tag lala=lala \
-            graph-api-staging
+            graph-api-${GITHUB_REF##*/}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
