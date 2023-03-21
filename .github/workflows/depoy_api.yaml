@@ -43,6 +43,7 @@ jobs:
             --env-var JWT_SECRET=$JWT_SECRET \
             --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
+            --env-var TEST=TEST \
             graph-api-${GITHUB_REF##*/}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
