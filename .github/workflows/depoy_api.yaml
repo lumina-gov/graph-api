@@ -22,7 +22,7 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
-          version: "0.15"
+          version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build
