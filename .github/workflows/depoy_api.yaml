@@ -34,6 +34,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
         # we might want to zip here instead of deploying as a binary
+      - name: lambda-version
+        run: cargo lambda --version
       - name: Deploy
         run: |
           cargo lambda deploy \
