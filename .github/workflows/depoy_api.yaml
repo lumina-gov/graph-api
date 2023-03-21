@@ -38,6 +38,7 @@ jobs:
         run: |
           cargo lambda deploy \
             --iam-role arn:aws:iam::739724808938:role/cargo-lambda-role-f534bf82-46e3-4113-b8fe-66714d3d0b3f \
+            --env-var FOO=FOO \
             --env-var DATABASE_URL=$DATABASE_URL \
             --env-var JWT_SECRET=$JWT_SECRET \
             --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
