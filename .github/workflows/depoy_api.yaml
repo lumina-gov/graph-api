@@ -22,6 +22,7 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
+          version: "0.15"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Build
@@ -39,7 +40,6 @@ jobs:
       - name: Deploy
         run: |
           cargo lambda deploy \
-            --env-var BAR=BAR \
             --env-var DATABASE_URL=$DATABASE_URL \
             --env-var JWT_SECRET=$JWT_SECRET \
             --env-var LIGHT_UNIVERSITY_PRICE_ID=$LIGHT_UNIVERSITY_PRICE_ID \
