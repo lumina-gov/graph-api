@@ -4,7 +4,9 @@ on: push
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    # environment: production
+    # choose production if branch is main
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
