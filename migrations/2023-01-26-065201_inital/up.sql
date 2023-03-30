@@ -3,7 +3,7 @@
 --
 
 CREATE TABLE applications (
-    id uuid NOT NULL,
+    id uuid PRIMARY KEY,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     application jsonb NOT NULL,
     application_type character varying NOT NULL
@@ -15,7 +15,7 @@ CREATE TABLE applications (
 --
 
 CREATE TABLE courses (
-    id uuid NOT NULL,
+    id uuid PRIMARY KEY,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     name character varying DEFAULT ''::character varying NOT NULL,
     slug text NOT NULL
@@ -29,7 +29,7 @@ CREATE TABLE courses (
 CREATE TABLE units (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     name character varying DEFAULT ''::character varying NOT NULL,
-    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    id uuid DEFAULT extensions.uuid_generate_v4() PRIMARY KEY,
     parent_unit uuid,
     course_id uuid NOT NULL,
     slug text NOT NULL
