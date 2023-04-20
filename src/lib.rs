@@ -36,6 +36,7 @@ async fn function_handler(
                 .headers()
                 .get("Authorization")
                 .map(|v| v.to_str().unwrap().to_string());
+
             let user_result = match token {
                 Some(token) => {
                     let user =
@@ -111,31 +112,5 @@ impl Service<Request> for App {
         let context = self.context.clone();
 
         Box::pin(async move { function_handler(event, &schema, &context).await })
-    }
-}
-
-pub mod test_utils {
-    use lambda_http::Body;
-    use serde_json::json;
-
-    pub async fn query(query: &str, token: Option<String>) -> Result<serde_json::Value, anyhow::Error> {
-        let app = super::App::new().await
-            .map_err(|e| anyhow::anyhow!(e))?;
-
-        let req_body = json!({
-            "query": query,
-            "auth_token": token
-        }).to_string();
-
-        let mut request = lambda_http::Request::new(Body::from(req_body));
-
-        *request.method_mut() = lambda_http::http::Method::POST;
-
-        let res = app.respond(request).await
-            .map_err(|e| anyhow::anyhow!(e))?;
-
-        let body = res.body();
-
-        Ok(serde_json::from_slice(&body)?)
     }
 }
