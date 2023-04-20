@@ -1,7 +1,9 @@
 -- Delete existing tables
 DROP TABLE IF EXISTS enrollments;
-DROP TABLE IF EXISTS courses;
 DROP TABLE IF EXISTS units;
+DROP TABLE IF EXISTS courses;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS bank;
 
 -- Create unit_status enum
 CREATE TYPE unit_status AS ENUM ('NotStarted', 'InProgress', 'Completed');

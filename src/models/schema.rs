@@ -41,9 +41,7 @@ diesel::table! {
         country_code -> Varchar,
         phone_number -> Varchar,
         role -> Nullable<Varchar>,
-        object_id -> Nullable<Varchar>,
         referrer -> Nullable<Uuid>,
-        referrer_mongo -> Nullable<Varchar>,
         stripe_customer_id -> Nullable<Varchar>,
     }
 }
