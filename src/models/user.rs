@@ -35,9 +35,7 @@ pub struct User {
     pub country_code: String,
     pub phone_number: String,
     pub role: Option<String>,
-    pub object_id: Option<String>,
     pub referrer: Option<Uuid>,
-    pub referrer_mongo: Option<String>,
     pub stripe_customer_id: Option<String>,
 }
 
@@ -134,8 +132,6 @@ impl User {
             country_code: create_user.country_code,
             phone_number: create_user.phone_number,
             referrer: None,
-            object_id: None,
-            referrer_mongo: None,
             role: None,
             stripe_customer_id: None,
         };
