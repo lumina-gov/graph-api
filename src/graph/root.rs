@@ -2,16 +2,13 @@ use std::str::FromStr;
 use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
-use crate::models::course::Course;
-use crate::models::enrollments::Enrollment;
-use crate::models::schema::courses;
-use crate::models::unit::Unit;
+use crate::models::unit_progress::UnitProgress;
+use crate::models::unit_progress::UnitStatus;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
 use crate::stripe::get_stripe_client;
 use diesel::QueryDsl;
-use diesel::OptionalExtension;
 use diesel_async::RunQueryDsl;
 use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
@@ -120,43 +117,38 @@ impl Query {
         Ok(data as i32)
     }
 
-    async fn courses(context: &UniqueContext) -> FieldResult<Vec<Course>> {
-        use crate::models::schema::courses::dsl::*;
-
-        let data = courses
-            .load::<Course>(&mut context.diesel_pool.get().await?)
-            .await?;
-
-        Ok(data)
-    }
-    async fn course_by_slug(context: &UniqueContext, slug: String) -> FieldResult<Option<Course>> {
-        use crate::models::schema::courses::dsl;
-        let conn = &mut context.diesel_pool.get().await?;
-
-        let data = dsl::courses
-            .filter(dsl::slug.eq(slug))
-            .first::<Course>(conn)
-            .await
-            .optional()?;
-
-        Ok(data)
-    }
-
-    async fn unit_by_slug(context: &UniqueContext, slug: String) -> FieldResult<Option<Unit>> {
-        use crate::models::schema::units::dsl;
-        let conn = &mut context.diesel_pool.get().await?;
-
-        let data = dsl::units
-            .filter(dsl::slug.eq(slug))
-            .first::<Unit>(conn)
-            .await
-            .optional()?;
-
-        Ok(data)
-    }
-
     async fn me(context: &UniqueContext) -> Option<User> {
         context.user().ok()
+    }
+
+    async fn course_progress(context: &UniqueContext, course_slug: String) -> FieldResult<Vec<UnitProgress>> {
+        let user = match &context.user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user,
+        };
+
+        let progress = UnitProgress::course_progres(context, user, course_slug)
+            .await?;
+
+        Ok(progress)
+    }
+
+    async fn all_course_progress(context: &UniqueContext) -> FieldResult<Vec<Vec<UnitProgress>>> {
+        let user = match &context.user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user,
+        };
+
+        Ok(UnitProgress::all_course_progress(context, user).await?)
+    }
+
+    async fn last_updated_unit(context: &UniqueContext) -> FieldResult<Option<UnitProgress>> {
+        let user = match &context.user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user,
+        };
+
+        Ok(UnitProgress::last_updated_unit(context, user).await?)
     }
 }
 
@@ -220,27 +212,26 @@ impl Mutation {
         }
     }
 
-    async fn enroll_user_to_course(
+    async fn set_unit_progress(
         &self,
         context: &UniqueContext,
+        unit_slug: String,
         course_slug: String,
-    ) -> FieldResult<bool> {
+        status: UnitStatus,
+    ) -> FieldResult<UnitProgress> {
         let user = match &context.user {
             None => return Err(ErrorCode::Unauthenticated.into_field_error()),
             Some(user) => user,
         };
 
-        let course = match courses::table
-            .filter(courses::slug.eq(course_slug))
-            .first::<Course>(&mut context.diesel_pool.get().await?)
-            .await
-            .optional()? {
-            None => return Err(ErrorCode::CourseNotFound.into_field_error()),
-            Some(course) => course,
-        };
+        let unit_progress = UnitProgress::create_or_update(
+            context,
+            &user,
+            unit_slug,
+            course_slug,
+            status,
+        ).await?;
 
-        Enrollment::enroll_user(context, user, &course).await?;
-
-        Ok(true)
+        Ok(unit_progress)
     }
 }

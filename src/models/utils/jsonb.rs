@@ -27,7 +27,7 @@ use std::ops::{Deref, DerefMut};
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, AsExpression, FromSqlRow, PartialEq)]
 #[serde(transparent)]
-#[sql_type = "sql_types::Jsonb"]
+#[diesel(sql_type = sql_types::Jsonb)]
 pub struct JsonB<T>(pub T);
 
 impl<T> JsonB<T> {

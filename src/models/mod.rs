@@ -10,11 +10,9 @@
 // https://github.com/graphql-rust/juniper/issues/553
 
 pub mod citizenship_application;
-pub mod course;
 pub mod applications;
 pub mod organisation;
 pub mod schema;
-pub mod unit;
+pub mod unit_progress;
 pub mod user;
 pub mod utils;
-pub mod enrollments;

@@ -1,13 +1,12 @@
-use graph_api::App;
-use lambda_http::Error;
+mod shared;
 
 #[tokio::test]
 async fn test_ping() -> Result<(), anyhow::Error> {
-    let res = graph_api::test_utils::query("
+    let res = shared::query("
         query {
             ping
         }
-    ", None).await?;
+    ", &None).await?;
 
     dbg!(&res);
 
