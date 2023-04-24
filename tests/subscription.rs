@@ -10,7 +10,10 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
         r#"
         query {
             me {
-                subscription_expiry_date
+                stripe_subscription_info {
+                    status
+                    expiry_date
+                }
             }
         }
     "#,
@@ -18,7 +21,8 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
     ).await?;
 
     assert_eq!(res["errors"], json!(null));
-    assert_eq!(res["data"]["me"]["subscription_expiry_date"], json!(null));
+    assert_eq!(res["data"]["me"]["stripe_subscription_info"]["status"], "NONE");
+    assert_eq!(res["data"]["me"]["stripe_subscription_info"]["expiry_date"], json!(null));
 
     Ok(())
 }

@@ -13,7 +13,7 @@ use diesel::{
 };
 use diesel_async::RunQueryDsl;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use juniper::{graphql_object, FieldResult, GraphQLInputObject};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, GraphQLEnum};
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
 use uuid::Uuid;
@@ -37,7 +37,20 @@ pub struct User {
     pub role: Option<String>,
     pub referrer: Option<Uuid>,
     pub stripe_customer_id: Option<String>,
-    pub subscription_expiry_date: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, GraphQLObject, Deserialize, Serialize)]
+#[graphql(rename_all = "none")]
+struct SubscriptionInfo {
+    status: SubscriptionStatus,
+    expiry_date: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, GraphQLEnum)]
+enum SubscriptionStatus {
+    Renewing,
+    Expiring,
+    None,
 }
 
 #[graphql_object(
@@ -109,52 +122,7 @@ impl User {
         Ok(session.url)
     }
 
-    /// match subscription_expiry_date
-    ///    Some(date) if date > now => return date
-    ///    Some(date) if date <= now => match self.check_for_stripe_subscription(context).await?
-    ///       Some(date) => // update the user's subscription_expiry_date and return date
-    ///       None => // update the user's subscription_expiry_date to null and return None
-    ///    None => match self.check_for_stripe_subscription(context).await?
-    ///      Some(date) => // update the user's subscription_expiry_date and return date
-    ///      None => // update the user's subscription_expiry_date to null and return None
-    async fn subscription_expiry_date(&self, context: &UniqueContext) -> FieldResult<Option<DateTime<Utc>>> {
-        let now = Utc::now();
-
-        match self.subscription_expiry_date {
-            Some(date) if date > now => Ok(Some(date)),
-            Some(date) => { // date <= now
-                let subscription_expiry_date = self.check_for_stripe_subscription(context).await?;
-
-                self.set_subscription_expiry_date(context, subscription_expiry_date).await?;
-
-                Ok(subscription_expiry_date)
-            }
-            None => {
-                let subscription_expiry_date = self.check_for_stripe_subscription(context).await?;
-
-                self.set_subscription_expiry_date(context, subscription_expiry_date).await?;
-
-                Ok(subscription_expiry_date)
-            }
-        }
-    }
-}
-
-impl User {
-    async fn set_subscription_expiry_date(&self, context: &UniqueContext, subscription_expiry_date: Option<DateTime<Utc>>) -> FieldResult<()> {
-        use super::schema::users::dsl::*;
-
-        let conn = &mut context.diesel_pool.get().await?;
-
-        diesel::update(users.filter(id.eq(self.id)))
-            .set(subscription_expiry_date.eq(subscription_expiry_date))
-            .execute(conn)
-            .await?;
-
-        Ok(())
-    }
-
-    async fn check_for_stripe_subscription(&self, context: &UniqueContext) -> FieldResult<Option<DateTime<Utc>>> {
+    async fn stripe_subscription_info(&self, context: &UniqueContext) -> FieldResult<SubscriptionInfo> {
         let stripe_customer_id = self.stripe_customer_id(context).await?;
         let client = get_stripe_client();
 
@@ -179,12 +147,20 @@ impl User {
                     Utc,
                 );
 
-                Ok(Some(subscription_expiry_date))
+                Ok(SubscriptionInfo {
+                    expiry_date: Some(subscription_expiry_date),
+                    status: match subscription.cancel_at_period_end {
+                        true => SubscriptionStatus::Expiring,
+                        false => SubscriptionStatus::Renewing,
+                    }
+                })
             }
-            None => Ok(None),
+            None => Ok(SubscriptionInfo { status: SubscriptionStatus::None, expiry_date: None }),
         }
     }
+}
 
+impl User {
     pub async fn create_user(
         context: &UniqueContext,
         create_user: CreateUserInput,
@@ -209,7 +185,6 @@ impl User {
             referrer: None,
             role: None,
             stripe_customer_id: None,
-            subscription_expiry_date: None,
         };
 
         match diesel::insert_into(users::table)

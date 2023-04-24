@@ -43,7 +43,6 @@ diesel::table! {
         role -> Nullable<Varchar>,
         referrer -> Nullable<Uuid>,
         stripe_customer_id -> Nullable<Varchar>,
-        subscription_expiry_date -> Nullable<Timestamptz>,
     }
 }
 
