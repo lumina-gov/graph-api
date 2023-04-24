@@ -6,16 +6,16 @@ use crate::graph::context::UniqueContext;
 use crate::models::schema::users;
 use crate::stripe::get_stripe_client;
 use chrono::serde::ts_milliseconds;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDateTime};
 use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
 use diesel::{
     result::DatabaseErrorKind, Identifiable, Insertable, OptionalExtension, QueryDsl, Queryable,
 };
 use diesel_async::RunQueryDsl;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use juniper::{graphql_object, FieldResult, GraphQLInputObject};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, GraphQLEnum};
 use serde::{Deserialize, Serialize};
-use stripe::CreateBillingPortalSession;
+use stripe::{CreateBillingPortalSession, PriceId};
 use uuid::Uuid;
 
 use super::applications::Application;
@@ -37,6 +37,20 @@ pub struct User {
     pub role: Option<String>,
     pub referrer: Option<Uuid>,
     pub stripe_customer_id: Option<String>,
+}
+
+#[derive(Debug, Clone, GraphQLObject, Deserialize, Serialize)]
+#[graphql(rename_all = "none")]
+struct SubscriptionInfo {
+    status: SubscriptionStatus,
+    expiry_date: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, GraphQLEnum)]
+enum SubscriptionStatus {
+    Renewing,
+    Expiring,
+    None,
 }
 
 #[graphql_object(
@@ -106,6 +120,43 @@ impl User {
         let session = stripe::BillingPortalSession::create(&client, session).await?;
 
         Ok(session.url)
+    }
+
+    async fn stripe_subscription_info(&self, context: &UniqueContext) -> FieldResult<SubscriptionInfo> {
+        let stripe_customer_id = self.stripe_customer_id(context).await?;
+        let client = get_stripe_client();
+
+        let subscription = stripe::Subscription::list(&client, &stripe::ListSubscriptions {
+            customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
+            price: Some(PriceId::from_str(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)?),
+            ..Default::default()
+        })
+            .await?
+            .data.get(0)
+            .cloned();
+
+        match subscription {
+            Some(subscription) => {
+                let native_date_time = match NaiveDateTime::from_timestamp_millis(subscription.current_period_end) {
+                    Some(date) => date,
+                    None => return Err(ErrorCode::Custom("FAILED_TO_PARSE_DATE".into(), "Failed to parse date".into()).into()),
+                };
+
+                let subscription_expiry_date = DateTime::<Utc>::from_utc(
+                    native_date_time,
+                    Utc,
+                );
+
+                Ok(SubscriptionInfo {
+                    expiry_date: Some(subscription_expiry_date),
+                    status: match subscription.cancel_at_period_end {
+                        true => SubscriptionStatus::Expiring,
+                        false => SubscriptionStatus::Renewing,
+                    }
+                })
+            }
+            None => Ok(SubscriptionInfo { status: SubscriptionStatus::None, expiry_date: None }),
+        }
     }
 }
 
