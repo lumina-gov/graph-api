@@ -6,7 +6,7 @@ use crate::graph::context::UniqueContext;
 use crate::models::schema::users;
 use crate::stripe::get_stripe_client;
 use chrono::serde::ts_milliseconds;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDateTime};
 use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
 use diesel::{
     result::DatabaseErrorKind, Identifiable, Insertable, OptionalExtension, QueryDsl, Queryable,
@@ -15,7 +15,7 @@ use diesel_async::RunQueryDsl;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 use serde::{Deserialize, Serialize};
-use stripe::CreateBillingPortalSession;
+use stripe::{CreateBillingPortalSession, PriceId};
 use uuid::Uuid;
 
 use super::applications::Application;
@@ -37,6 +37,7 @@ pub struct User {
     pub role: Option<String>,
     pub referrer: Option<Uuid>,
     pub stripe_customer_id: Option<String>,
+    pub subscription_expiry_date: Option<DateTime<Utc>>,
 }
 
 #[graphql_object(
@@ -107,9 +108,83 @@ impl User {
 
         Ok(session.url)
     }
+
+    /// match subscription_expiry_date
+    ///    Some(date) if date > now => return date
+    ///    Some(date) if date <= now => match self.check_for_stripe_subscription(context).await?
+    ///       Some(date) => // update the user's subscription_expiry_date and return date
+    ///       None => // update the user's subscription_expiry_date to null and return None
+    ///    None => match self.check_for_stripe_subscription(context).await?
+    ///      Some(date) => // update the user's subscription_expiry_date and return date
+    ///      None => // update the user's subscription_expiry_date to null and return None
+    async fn subscription_expiry_date(&self, context: &UniqueContext) -> FieldResult<Option<DateTime<Utc>>> {
+        let now = Utc::now();
+
+        match self.subscription_expiry_date {
+            Some(date) if date > now => Ok(Some(date)),
+            Some(date) => { // date <= now
+                let subscription_expiry_date = self.check_for_stripe_subscription(context).await?;
+
+                self.set_subscription_expiry_date(context, subscription_expiry_date).await?;
+
+                Ok(subscription_expiry_date)
+            }
+            None => {
+                let subscription_expiry_date = self.check_for_stripe_subscription(context).await?;
+
+                self.set_subscription_expiry_date(context, subscription_expiry_date).await?;
+
+                Ok(subscription_expiry_date)
+            }
+        }
+    }
 }
 
 impl User {
+    async fn set_subscription_expiry_date(&self, context: &UniqueContext, subscription_expiry_date: Option<DateTime<Utc>>) -> FieldResult<()> {
+        use super::schema::users::dsl::*;
+
+        let conn = &mut context.diesel_pool.get().await?;
+
+        diesel::update(users.filter(id.eq(self.id)))
+            .set(subscription_expiry_date.eq(subscription_expiry_date))
+            .execute(conn)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn check_for_stripe_subscription(&self, context: &UniqueContext) -> FieldResult<Option<DateTime<Utc>>> {
+        let stripe_customer_id = self.stripe_customer_id(context).await?;
+        let client = get_stripe_client();
+
+        let subscription = stripe::Subscription::list(&client, &stripe::ListSubscriptions {
+            customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
+            price: Some(PriceId::from_str(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)?),
+            ..Default::default()
+        })
+            .await?
+            .data.get(0)
+            .cloned();
+
+        match subscription {
+            Some(subscription) => {
+                let native_date_time = match NaiveDateTime::from_timestamp_millis(subscription.current_period_end) {
+                    Some(date) => date,
+                    None => return Err(ErrorCode::Custom("FAILED_TO_PARSE_DATE".into(), "Failed to parse date".into()).into()),
+                };
+
+                let subscription_expiry_date = DateTime::<Utc>::from_utc(
+                    native_date_time,
+                    Utc,
+                );
+
+                Ok(Some(subscription_expiry_date))
+            }
+            None => Ok(None),
+        }
+    }
+
     pub async fn create_user(
         context: &UniqueContext,
         create_user: CreateUserInput,
@@ -134,6 +209,7 @@ impl User {
             referrer: None,
             role: None,
             stripe_customer_id: None,
+            subscription_expiry_date: None,
         };
 
         match diesel::insert_into(users::table)
