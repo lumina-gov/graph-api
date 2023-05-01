@@ -187,3 +187,56 @@ async fn can_get_last_updated_unit() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+//testing if all course progress query sorts by updated_at
+#[tokio::test]
+async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> {
+    let user_email = shared::create_user().await?;
+    let token = shared::login_specific(&user_email).await?;
+
+    set_unit_progress("foo", "bar", "IN_PROGRESS", &token).await?;
+    set_unit_progress("xyz", "bar", "IN_PROGRESS", &token).await?;
+
+    let res_2 = shared::query(
+        r#"
+        query {
+            all_course_progress {
+                id
+                status
+                user_id
+                unit_slug
+                course_slug
+                updated_at
+            }
+        }
+    "#,
+        &token,
+    ).await?;
+
+    assert_eq!(res_2["errors"], json!(null));
+
+    assert_eq!(res_2["data"]["all_course_progress"][0][0]["status"], "IN_PROGRESS");
+    assert_eq!(res_2["data"]["all_course_progress"][0][0]["unit_slug"], "bar");
+
+    assert_eq!(res_2["data"]["all_course_progress"][1][0]["status"], "IN_PROGRESS");
+    assert_eq!(res_2["data"]["all_course_progress"][1][0]["unit_slug"], "bar");
+
+    // order isn't guaranteed, so check that both course_slugs are present
+    let mut found_foo = false;
+    let mut found_xyz = false;
+
+    for course_progress in res_2["data"]["all_course_progress"].as_array().unwrap() {
+        if course_progress[0]["course_slug"] == "foo" {
+            found_foo = true;
+        }
+
+        if course_progress[0]["course_slug"] == "xyz" {
+            found_xyz = true;
+        }
+    }
+
+    assert!(found_foo);
+    assert!(found_xyz);
+
+    Ok(())
+}

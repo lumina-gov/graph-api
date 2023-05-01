@@ -88,8 +88,9 @@ impl UnitProgress {
         // and each Self is a UnitProgress
 
         let mut course_progress: HashMap<String, Vec<Self>> = HashMap::new();
-
+        // order by updated_at desc so that the most recently updated unit is first
         let all_progress: Vec<Self> = unit_progress::table
+            .order_by(unit_progress::updated_at.desc())
             .filter(unit_progress::user_id.eq(user.id))
             .get_results(conn)
             .await?;
