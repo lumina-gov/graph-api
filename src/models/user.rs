@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::time::SystemTime;
 
+use crate::LIGHTUNIVERSITY_PRICE_ID;
 use crate::error::ErrorCode;
 use crate::graph::context::UniqueContext;
 use crate::models::schema::users;
@@ -128,7 +129,7 @@ impl User {
 
         let subscription = stripe::Subscription::list(&client, &stripe::ListSubscriptions {
             customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
-            price: Some(PriceId::from_str(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)?),
+            price: Some(PriceId::from_str(LIGHTUNIVERSITY_PRICE_ID)?),
             ..Default::default()
         })
             .await?

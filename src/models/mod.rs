@@ -16,3 +16,4 @@ pub mod schema;
 pub mod unit_progress;
 pub mod user;
 pub mod utils;
+pub mod question_assessment;
