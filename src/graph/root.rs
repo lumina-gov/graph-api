@@ -1,17 +1,19 @@
-use std::str::FromStr;
 use crate::error::ErrorCode;
 use crate::models::citizenship_application::CitizenshipApplication;
 use crate::models::citizenship_application::CitizenshipApplicationInput;
+use crate::models::question_assessment::QuestionAssessment;
 use crate::models::unit_progress::UnitProgress;
 use crate::models::unit_progress::UnitStatus;
 use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
 use crate::stripe::get_stripe_client;
+use crate::LIGHTUNIVERSITY_PRICE_ID;
 use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
 use juniper::IntoFieldError;
 use juniper::{graphql_object, EmptySubscription, FieldResult};
+use std::str::FromStr;
 use uuid::Uuid;
 use zxcvbn::time_estimates::CrackTimeSeconds;
 
@@ -38,7 +40,6 @@ pub fn create_schema() -> Schema {
     rename_all = "none"
 )]
 impl Query {
-
     async fn ping(&self) -> FieldResult<String> {
         Ok("pong".to_string())
     }
@@ -70,10 +71,16 @@ impl Query {
         count: i32,
     ) -> FieldResult<Vec<i32>> {
         if count > 36 {
-            return Err(ErrorCode::Custom("BAD_REQUEST".into(), "Count must be below 36".into()).into_field_error());
+            return Err(
+                ErrorCode::Custom("BAD_REQUEST".into(), "Count must be below 36".into())
+                    .into_field_error(),
+            );
         }
         if interval > 6 {
-            return Err(ErrorCode::Custom("BAD_REQUEST".into(), "Interval must be below 6".into()).into_field_error());
+            return Err(
+                ErrorCode::Custom("BAD_REQUEST".into(), "Interval must be below 6".into())
+                    .into_field_error(),
+            );
         }
 
         use crate::models::schema::users::dsl::*;
@@ -121,14 +128,16 @@ impl Query {
         context.user().ok()
     }
 
-    async fn course_progress(context: &UniqueContext, course_slug: String) -> FieldResult<Vec<UnitProgress>> {
+    async fn course_progress(
+        context: &UniqueContext,
+        course_slug: String,
+    ) -> FieldResult<Vec<UnitProgress>> {
         let user = match &context.user {
             None => return Err(ErrorCode::Unauthenticated.into_field_error()),
             Some(user) => user,
         };
 
-        let progress = UnitProgress::course_progres(context, user, course_slug)
-            .await?;
+        let progress = UnitProgress::course_progres(context, user, course_slug).await?;
 
         Ok(progress)
     }
@@ -197,13 +206,11 @@ impl Mutation {
         let mut create_session = stripe::CreateCheckoutSession::new(&success_url);
         create_session.customer = Some(stripe::CustomerId::from_str(&stripe_customer_id)?);
         create_session.mode = Some(stripe::CheckoutSessionMode::Subscription);
-        create_session.line_items = Some(vec![
-            stripe::CreateCheckoutSessionLineItems {
-                price: Some(String::from(dotenv::var("LIGHT_UNIVERSITY_PRICE_ID").expect("LIGHT_UNIVERSITY_PRICE_ID not set"))),
-                quantity: Some(1),
-                ..Default::default()
-            },
-        ]);
+        create_session.line_items = Some(vec![stripe::CreateCheckoutSessionLineItems {
+            price: Some(String::from(LIGHTUNIVERSITY_PRICE_ID)),
+            quantity: Some(1),
+            ..Default::default()
+        }]);
 
         let session = stripe::CheckoutSession::create(&client, create_session).await?;
         match session.url {
@@ -224,14 +231,34 @@ impl Mutation {
             Some(user) => user,
         };
 
-        let unit_progress = UnitProgress::create_or_update(
-            context,
-            &user,
-            unit_slug,
-            course_slug,
-            status,
-        ).await?;
+        let unit_progress =
+            UnitProgress::create_or_update(context, &user, unit_slug, course_slug, status).await?;
 
         Ok(unit_progress)
+    }
+
+    async fn question_assessment(
+        &self,
+        context: &UniqueContext,
+        course_slug: String,
+        unit_slug: String,
+        question_slug: String,
+        question: String,
+        answer: String,
+    ) -> FieldResult<QuestionAssessment> {
+        let user = match &context.user {
+            None => return Err(ErrorCode::Unauthenticated.into_field_error()),
+            Some(user) => user,
+        };
+
+        Ok(QuestionAssessment::create_assessment(
+            context,
+            user,
+            course_slug,
+            unit_slug,
+            question_slug,
+            question,
+            answer,
+        ).await?)
     }
 }

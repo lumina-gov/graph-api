@@ -30,3 +30,4 @@ diesel-derive-enum = { version = "2.0.1", features = ["postgres"] }
 zxcvbn = "2.2.1"
 mongodb = "2.3.1"
 async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper-rustls"] }
+openai = "1.0.0-alpha.8"
