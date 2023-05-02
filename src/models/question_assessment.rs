@@ -1,5 +1,5 @@
 use juniper::{GraphQLObject, GraphQLEnum};
-use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole, ChatCompletion, ChatCompletionBuilder};
+use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
 use serde::{Serialize, Deserialize};
 
 use crate::graph::context::UniqueContext;
