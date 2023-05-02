@@ -11,8 +11,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         continue-on-error: true
-      - name: Install libssl
-        run: sudo apt install pkg-config && sudo apt install libssl-dev
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
