@@ -1,10 +1,9 @@
 use chrono::serde::ts_milliseconds;
 use chrono::{Utc, DateTime};
-use diesel::{Identifiable, Queryable, Insertable, ExpressionMethods, Associations};
+use diesel::{Identifiable, Queryable, Insertable, ExpressionMethods, Associations, QueryDsl, OptionalExtension};
 use diesel_async::RunQueryDsl;
 use diesel_derive_enum::DbEnum;
 use juniper::{GraphQLObject, GraphQLEnum};
-use lambda_runtime::Context;
 use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
@@ -130,13 +129,26 @@ Respond in Pure JSON
     }
 
     pub(crate) async fn get_question_assessment(
-        context: &Context,
+        context: &UniqueContext,
         user: &User,
         course_slug: String,
         unit_slug: String,
         question_slug: String,
     ) -> Result<Option<Self>, anyhow::Error> {
-        todo!()
+        let conn = &mut context.diesel_pool.get().await?;
+
+        match question_assessments::table
+            .filter(question_assessments::user_id.eq(user.id))
+            .filter(question_assessments::course_slug.eq(course_slug))
+            .filter(question_assessments::unit_slug.eq(unit_slug))
+            .filter(question_assessments::question_slug.eq(question_slug))
+            .first::<Self>(conn)
+            .await
+            .optional()
+        {
+            Ok(assessment) => Ok(assessment),
+            Err(e) => Err(e.into()),
+        }
     }
 
 }
