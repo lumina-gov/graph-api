@@ -159,6 +159,26 @@ impl Query {
 
         Ok(UnitProgress::last_updated_unit(context, user).await?)
     }
+
+    async fn question_assessment(
+        context: &UniqueContext,
+        course_slug: String,
+        unit_slug: String,
+        question_slug: String,
+    ) -> FieldResult<Option<QuestionAssessment>> {
+        let user = match &context.user {
+            None => return Ok(None),
+            Some(user) => user,
+        };
+
+        Ok(QuestionAssessment::get_question_assessment(
+            context,
+            user,
+            course_slug,
+            unit_slug,
+            question_slug,
+        ).await?)
+    }
 }
 
 #[graphql_object(

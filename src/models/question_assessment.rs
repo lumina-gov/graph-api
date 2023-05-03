@@ -4,6 +4,7 @@ use diesel::{Identifiable, Queryable, Insertable, ExpressionMethods, Association
 use diesel_async::RunQueryDsl;
 use diesel_derive_enum::DbEnum;
 use juniper::{GraphQLObject, GraphQLEnum};
+use lambda_runtime::Context;
 use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
@@ -126,6 +127,16 @@ Respond in Pure JSON
             Ok(assessment) => Ok(assessment),
             Err(e) => Err(e.into()),
         }
+    }
+
+    pub(crate) async fn get_question_assessment(
+        context: &Context,
+        user: &User,
+        course_slug: String,
+        unit_slug: String,
+        question_slug: String,
+    ) -> Result<Option<Self>, anyhow::Error> {
+        todo!()
     }
 
 }
