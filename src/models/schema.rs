@@ -2,6 +2,10 @@
 
 pub mod sql_types {
     #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "assessment"))]
+    pub struct Assessment;
+
+    #[derive(diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "unit_status"))]
     pub struct UnitStatus;
 }
@@ -12,6 +16,23 @@ diesel::table! {
         created_at -> Timestamptz,
         application -> Jsonb,
         application_type -> Varchar,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Assessment;
+
+    question_assessments (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        course_slug -> Varchar,
+        unit_slug -> Varchar,
+        question_slug -> Varchar,
+        answer -> Varchar,
+        assessment -> Assessment,
+        feedback -> Varchar,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -46,10 +67,12 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(question_assessments -> users (user_id));
 diesel::joinable!(unit_progress -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     applications,
+    question_assessments,
     unit_progress,
     users,
 );
