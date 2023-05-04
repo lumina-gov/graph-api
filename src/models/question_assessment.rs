@@ -58,6 +58,9 @@ impl QuestionAssessment {
 Assess the user's response, and provide feedback and corrections if necessary.
 If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 
+Course: {}
+Unit: {}
+
 type HumanString = string
 type Response = {{
     feedback: HumanString
@@ -76,6 +79,8 @@ Respond in Pure JSON
 ---
 {{
     "feedback": ""#,
+                course_slug,
+                unit_slug,
                 question,
                 match question_context {
                     Some(question_context) => format!("Context\n{}", question_context),
