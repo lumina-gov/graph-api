@@ -58,9 +58,6 @@ impl QuestionAssessment {
 Assess the user's response, and provide feedback and corrections if necessary.
 If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 
-Course: {}
-Unit: {}
-
 type HumanString = string
 type Response = {{
     feedback: HumanString
@@ -68,6 +65,8 @@ type Response = {{
 }}
 type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
 
+Course: {}
+Unit: {}
 Question:
 {}
 {}
@@ -96,7 +95,9 @@ Respond in Pure JSON
             .create()
             .await??;
 
-        let json_string: String = format!(r#"{{ "feedback": "{}"#, response.choices[0].message.content);
+        let content = response.choices[0].message.content.clone();
+
+        let json_string: String = format!(r#"{{ "feedback": "{}"#, content);
 
         #[derive(Debug, Deserialize)]
         struct PartialAssessment {
@@ -104,7 +105,7 @@ Respond in Pure JSON
             assessment: Assessment,
         }
 
-        let partial_assessment: PartialAssessment = serde_json::from_str(&json_string).map_err(|_| anyhow::anyhow!("Failed to serialise AI response, please try again"))?;
+        let partial_assessment: PartialAssessment = serde_json::from_str(&json_string).map_err(|_| anyhow::anyhow!("Failed to serialise AI response, please try again. AI Response {}", content))?;
 
         let assessment = QuestionAssessment {
             id: Uuid::new_v4(),
