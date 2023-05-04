@@ -65,8 +65,8 @@ type Response = {{
 }}
 type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
 
-Course: {}
-Unit: {}
+Course Slug: "{}"
+Unit Slug: "{}"
 Question:
 {}
 {}
