@@ -8,7 +8,6 @@ use crate::models::user::CreateUserInput;
 use crate::models::user::LoginUserInput;
 use crate::models::user::User;
 use crate::stripe::get_stripe_client;
-use crate::LIGHTUNIVERSITY_PRICE_ID;
 use diesel::QueryDsl;
 use diesel_async::RunQueryDsl;
 use juniper::IntoFieldError;
@@ -227,7 +226,7 @@ impl Mutation {
         create_session.customer = Some(stripe::CustomerId::from_str(&stripe_customer_id)?);
         create_session.mode = Some(stripe::CheckoutSessionMode::Subscription);
         create_session.line_items = Some(vec![stripe::CreateCheckoutSessionLineItems {
-            price: Some(String::from(LIGHTUNIVERSITY_PRICE_ID)),
+            price: Some(String::from(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)),
             quantity: Some(1),
             ..Default::default()
         }]);

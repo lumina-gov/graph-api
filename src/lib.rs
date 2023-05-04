@@ -2,6 +2,7 @@ pub mod error;
 pub mod graph;
 pub mod models;
 pub mod stripe;
+pub mod variables;
 
 use std::{sync::Arc, future::Future, pin::Pin};
 
@@ -13,8 +14,7 @@ pub use graph::{
 use juniper::http::{GraphQLRequest, GraphQLResponse};
 use lambda_http::{Body, Error, Request, Response, Service, http::Method};
 use openai::set_key;
-
-const LIGHTUNIVERSITY_PRICE_ID: &str = "price_1Mc2OQJRb0ozzDydL7R86kGy";
+use variables::init_non_secret_variables;
 
 async fn function_handler(
     event: Request,
@@ -89,6 +89,8 @@ impl App {
     pub async fn new() -> Result<Self, Error> {
         // There may or may not be a .env file, so we ignore the error.
         dotenv::dotenv().ok();
+        init_non_secret_variables();
+
         set_key(dotenv::var("OPENAI_KEY").unwrap());
 
         Ok(Self {
