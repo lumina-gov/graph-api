@@ -55,6 +55,7 @@ impl QuestionAssessment {
         let message = ChatCompletionMessage {
             content: format!(r#"
 Assess the user's response, and provide feedback and corrections if necessary.
+If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 
 type HumanString = string
 type Response = {{
