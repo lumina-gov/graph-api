@@ -265,6 +265,7 @@ impl Mutation {
         question_slug: String,
         question: String,
         answer: String,
+        question_context: Option<String>,
     ) -> FieldResult<QuestionAssessment> {
         let user = match &context.user {
             None => return Err(ErrorCode::Unauthenticated.into_field_error()),
@@ -279,6 +280,7 @@ impl Mutation {
             question_slug,
             question,
             answer,
+            question_context,
         ).await?)
     }
 }
