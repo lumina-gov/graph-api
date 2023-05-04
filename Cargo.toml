@@ -32,3 +32,4 @@ async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper-rustls"] }
 openai = "1.0.0-alpha.8"
 # using vendored version of openssl to avoid issues with lambda
 openssl = { version = "0.10", features = ["vendored"] }
+slug = "0.1.4"

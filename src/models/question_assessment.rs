@@ -87,7 +87,7 @@ Respond in Pure JSON
                 },
                 answer,
             ),
-            name: Some(user.first_name.clone()),
+            name: Some(slug::slugify(&user.first_name)),
             role: ChatCompletionMessageRole::User,
         };
 
