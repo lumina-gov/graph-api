@@ -51,6 +51,7 @@ impl QuestionAssessment {
         question_slug: String,
         question: String,
         answer: String,
+        question_context: Option<String>,
     ) -> Result<Self, anyhow::Error> {
         let message = ChatCompletionMessage {
             content: format!(r#"
@@ -65,6 +66,7 @@ type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
 
 Question:
 {}
+{}
 User Answer:
 {}
 <END USER ANSWER>
@@ -72,7 +74,14 @@ User Answer:
 Respond in Pure JSON
 ---
 {{
-    "feedback": ""#, question, answer),
+    "feedback": ""#,
+                question,
+                match question_context {
+                    Some(question_context) => format!("Context\n{}", question_context),
+                    None => String::new(),
+                },
+                answer,
+            ),
             name: Some(user.first_name.clone()),
             role: ChatCompletionMessageRole::User,
         };
