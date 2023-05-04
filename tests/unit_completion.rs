@@ -194,8 +194,13 @@ async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> 
     let user_email = shared::create_user().await?;
     let token = shared::login_specific(&user_email).await?;
 
-    set_unit_progress("foo", "bar", "IN_PROGRESS", &token).await?;
-    set_unit_progress("xyz", "bar", "IN_PROGRESS", &token).await?;
+    set_unit_progress("foo", "3", "IN_PROGRESS", &token).await?;
+    set_unit_progress("xyz", "bar", "NOT_STARTED", &token).await?;
+    set_unit_progress("abc", "bar", "NOT_STARTED", &token).await?;
+    set_unit_progress("foo", "2", "COMPLETED", &token).await?;
+    set_unit_progress("foo", "1", "COMPLETED", &token).await?;
+    set_unit_progress("foo", "0", "COMPLETED", &token).await?;
+    
 
     let res_2 = shared::query(
         r#"
@@ -215,11 +220,22 @@ async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> 
 
     assert_eq!(res_2["errors"], json!(null));
 
-    assert_eq!(res_2["data"]["all_course_progress"][0][0]["status"], "IN_PROGRESS");
-    assert_eq!(res_2["data"]["all_course_progress"][0][0]["unit_slug"], "bar");
+    assert_eq!(res_2["data"]["all_course_progress"][0][0]["course_slug"], "foo");
+    assert_eq!(res_2["data"]["all_course_progress"][1][0]["course_slug"], "abc");
+    assert_eq!(res_2["data"]["all_course_progress"][2][0]["course_slug"], "xyz");
 
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["status"], "IN_PROGRESS");
+    assert_eq!(res_2["data"]["all_course_progress"][0][0]["unit_slug"], "0");
+    assert_eq!(res_2["data"]["all_course_progress"][0][1]["unit_slug"], "1");
+    assert_eq!(res_2["data"]["all_course_progress"][0][2]["unit_slug"], "2");
+    assert_eq!(res_2["data"]["all_course_progress"][0][3]["unit_slug"], "3");
+
+    assert_eq!(res_2["data"]["all_course_progress"][1][0]["status"], "NOT_STARTED");
     assert_eq!(res_2["data"]["all_course_progress"][1][0]["unit_slug"], "bar");
+    assert_eq!(res_2["data"]["all_course_progress"][1][0]["course_slug"], "abc");
+
+    assert_eq!(res_2["data"]["all_course_progress"][2][0]["course_slug"], "xyz");
+    assert_eq!(res_2["data"]["all_course_progress"][2][0]["unit_slug"], "bar");
+    assert_eq!(res_2["data"]["all_course_progress"][2][0]["status"], "NOT_STARTED");
 
     // order isn't guaranteed, so check that both course_slugs are present
     let mut found_foo = false;

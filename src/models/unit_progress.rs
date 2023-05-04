@@ -61,7 +61,7 @@ impl UnitProgress {
         }
     }
 
-    pub async fn course_progres(
+    pub async fn course_progress(
         context: &UniqueContext,
         user: &User,
         course_slug: String,
@@ -101,7 +101,10 @@ impl UnitProgress {
             course_progress_vec.push(progress);
         }
 
-        Ok(course_progress.into_values().collect())
+        //Allows the course to be sorted to the last unit touched instead of random hashmap, done it this way to avoid rust compliler complaining
+        let mut vec_of_progress: Vec<_> = course_progress.into_values().collect();
+        vec_of_progress.sort_by(|a, b| b[0].updated_at.cmp(&a[0].updated_at));
+        Ok(vec_of_progress)
     }
 
     pub async fn last_updated_unit(context: &UniqueContext, user: &User) -> Result<Option<Self>, anyhow::Error> {

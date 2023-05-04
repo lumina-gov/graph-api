@@ -137,7 +137,8 @@ impl Query {
             Some(user) => user,
         };
 
-        let progress = UnitProgress::course_progres(context, user, course_slug).await?;
+        let progress = UnitProgress::course_progress(context, user, course_slug)
+            .await?;
 
         Ok(progress)
     }
