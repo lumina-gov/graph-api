@@ -14,7 +14,7 @@ use juniper::http::{GraphQLRequest, GraphQLResponse};
 use lambda_http::{Body, Error, Request, Response, Service, http::Method};
 use openai::set_key;
 
-const LIGHTUNIVERSITY_PRICE_ID: &str = "price_1Mc2OQJRb0ozzDydL7R86kGy";
+const LIGHTUNIVERSITY_PRICE_ID: &str = "price_1MnbOyJRb0ozzDydaCZxbuvY";
 
 async fn function_handler(
     event: Request,
