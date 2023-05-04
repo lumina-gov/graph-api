@@ -13,6 +13,7 @@ async fn can_do_question_assessment() -> Result<(), anyhow::Error> {
         "test-question",
         "What is 1+1?",
         "2",
+        "mathematics",
         &token,
     ).await?;
 
@@ -42,12 +43,13 @@ async fn create_question_assessment(
     question_slug: &str,
     question: &str,
     answer: &str,
+    context: &str,
     token: &Option<String>
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
         mutation {{
-            question_assessment(course_slug: "{}", unit_slug: "{}", question_slug: "{}", question: "{}", answer: "{}") {{
+            question_assessment(course_slug: "{}", unit_slug: "{}", question_slug: "{}", question: "{}", answer: "{}", context: "{}") {{
                 unit_slug
                 question_slug
                 answer
@@ -62,6 +64,7 @@ async fn create_question_assessment(
         question_slug,
         question,
         answer,
+        context,
     );
 
     shared::query(&query, &token).await
