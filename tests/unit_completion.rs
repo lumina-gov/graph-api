@@ -200,7 +200,7 @@ async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> 
     set_unit_progress("foo", "2", "COMPLETED", &token).await?;
     set_unit_progress("foo", "1", "COMPLETED", &token).await?;
     set_unit_progress("foo", "0", "COMPLETED", &token).await?;
-    
+
 
     let res_2 = shared::query(
         r#"

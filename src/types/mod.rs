@@ -12,7 +12,6 @@
 pub mod citizenship_application;
 pub mod applications;
 pub mod organisation;
-pub mod schema;
 pub mod unit_progress;
 pub mod user;
 pub mod utils;

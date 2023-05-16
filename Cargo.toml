@@ -7,9 +7,6 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
-# install juniper from master branch for now since UUID 1.0 support was added recently
-# migrate this to the crate once it has been supported
-juniper = { git = "https://github.com/graphql-rust/juniper.git", features = ["uuid", "chrono"] }
 tokio = { version = "1.24.1", features = ["rt-multi-thread", "macros"] }
 lambda_http = { version = "0.7", default-features = false, features = ["apigw_http"] }
 lambda_runtime = "0.7"
@@ -33,3 +30,4 @@ openai = "1.0.0-alpha.8"
 # using vendored version of openssl to avoid issues with lambda
 openssl = { version = "0.10", features = ["vendored"] }
 slug = "0.1.4"
+async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }

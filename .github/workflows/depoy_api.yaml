@@ -34,10 +34,6 @@ jobs:
         run: diesel migration run
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Print database schema
-        run: diesel print-schema > src/models/schema.rs
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
         run: cargo lambda build --release --arm64
 
