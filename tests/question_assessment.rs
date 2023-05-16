@@ -49,7 +49,7 @@ async fn create_question_assessment(
     let query = format!(
         r#"
         mutation {{
-            question_assessment(course_slug: "{}", unit_slug: "{}", question_slug: "{}", question: "{}", answer: "{}", context: "{}") {{
+            question_assessment(course_slug: "{}", unit_slug: "{}", question_slug: "{}", question: "{}", answer: "{}", question_context: "{}") {{
                 unit_slug
                 question_slug
                 answer
