@@ -1,11 +1,11 @@
 //! Implements utility type for JSON, JSONB field handling in diesel
-use diesel::deserialize::{FromSqlRow};
+use diesel::deserialize::FromSqlRow;
 use diesel::expression::AsExpression;
 use diesel::pg::Pg;
-use diesel::{sql_types};
+use diesel::sql_types;
 use diesel::{deserialize::FromSql, serialize::ToSql};
 use serde::de::DeserializeOwned;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
 

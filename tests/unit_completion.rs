@@ -1,13 +1,12 @@
 use serde_json::json;
 
-
 mod shared;
 
 pub async fn set_unit_progress(
     course_slug: &str,
     unit_slug: &str,
     status: &str,
-    token: &Option<String>
+    token: &Option<String>,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
@@ -28,7 +27,6 @@ pub async fn set_unit_progress(
     shared::query(&query, &token).await
 }
 
-
 async fn last_updated_unit(token: &Option<String>) -> Result<serde_json::Value, anyhow::Error> {
     shared::query(
         r#"
@@ -44,7 +42,8 @@ async fn last_updated_unit(token: &Option<String>) -> Result<serde_json::Value, 
         }
     "#,
         &token,
-    ).await
+    )
+    .await
 }
 
 #[tokio::test]
@@ -66,7 +65,10 @@ async fn mark_unit_as_completed() -> Result<(), anyhow::Error> {
     assert_eq!(res_2["data"]["set_unit_progress"]["status"], "COMPLETED");
     assert_eq!(res_2["data"]["set_unit_progress"]["unit_slug"], "bar");
     assert_eq!(res_2["data"]["set_unit_progress"]["course_slug"], "foo");
-    assert_eq!(res_2["data"]["set_unit_progress"]["id"], res_1["data"]["set_unit_progress"]["id"]);
+    assert_eq!(
+        res_2["data"]["set_unit_progress"]["id"],
+        res_1["data"]["set_unit_progress"]["id"]
+    );
 
     Ok(())
 }
@@ -92,7 +94,8 @@ async fn can_get_course_progress() -> Result<(), anyhow::Error> {
         }
     "#,
         &token,
-    ).await?;
+    )
+    .await?;
 
     assert_eq!(res_2["errors"], json!(null));
     assert_eq!(res_2["data"]["course_progress"][0]["status"], "IN_PROGRESS");
@@ -123,15 +126,28 @@ async fn can_get_all_course_progress() -> Result<(), anyhow::Error> {
         }
     "#,
         &token,
-    ).await?;
+    )
+    .await?;
 
     assert_eq!(res_2["errors"], json!(null));
 
-    assert_eq!(res_2["data"]["all_course_progress"][0][0]["status"], "IN_PROGRESS");
-    assert_eq!(res_2["data"]["all_course_progress"][0][0]["unit_slug"], "bar");
+    assert_eq!(
+        res_2["data"]["all_course_progress"][0][0]["status"],
+        "IN_PROGRESS"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][0][0]["unit_slug"],
+        "bar"
+    );
 
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["status"], "IN_PROGRESS");
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["unit_slug"], "bar");
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["status"],
+        "IN_PROGRESS"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["unit_slug"],
+        "bar"
+    );
 
     // order isn't guaranteed, so check that both course_slugs are present
     let mut found_foo = false;
@@ -152,7 +168,6 @@ async fn can_get_all_course_progress() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
-
 
 #[tokio::test]
 async fn can_get_last_updated_unit() -> Result<(), anyhow::Error> {
@@ -201,7 +216,6 @@ async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> 
     set_unit_progress("foo", "1", "COMPLETED", &token).await?;
     set_unit_progress("foo", "0", "COMPLETED", &token).await?;
 
-
     let res_2 = shared::query(
         r#"
         query {
@@ -216,26 +230,54 @@ async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> 
         }
     "#,
         &token,
-    ).await?;
+    )
+    .await?;
 
     assert_eq!(res_2["errors"], json!(null));
 
-    assert_eq!(res_2["data"]["all_course_progress"][0][0]["course_slug"], "foo");
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["course_slug"], "abc");
-    assert_eq!(res_2["data"]["all_course_progress"][2][0]["course_slug"], "xyz");
+    assert_eq!(
+        res_2["data"]["all_course_progress"][0][0]["course_slug"],
+        "foo"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["course_slug"],
+        "abc"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][2][0]["course_slug"],
+        "xyz"
+    );
 
     assert_eq!(res_2["data"]["all_course_progress"][0][0]["unit_slug"], "0");
     assert_eq!(res_2["data"]["all_course_progress"][0][1]["unit_slug"], "1");
     assert_eq!(res_2["data"]["all_course_progress"][0][2]["unit_slug"], "2");
     assert_eq!(res_2["data"]["all_course_progress"][0][3]["unit_slug"], "3");
 
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["status"], "NOT_STARTED");
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["unit_slug"], "bar");
-    assert_eq!(res_2["data"]["all_course_progress"][1][0]["course_slug"], "abc");
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["status"],
+        "NOT_STARTED"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["unit_slug"],
+        "bar"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][1][0]["course_slug"],
+        "abc"
+    );
 
-    assert_eq!(res_2["data"]["all_course_progress"][2][0]["course_slug"], "xyz");
-    assert_eq!(res_2["data"]["all_course_progress"][2][0]["unit_slug"], "bar");
-    assert_eq!(res_2["data"]["all_course_progress"][2][0]["status"], "NOT_STARTED");
+    assert_eq!(
+        res_2["data"]["all_course_progress"][2][0]["course_slug"],
+        "xyz"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][2][0]["unit_slug"],
+        "bar"
+    );
+    assert_eq!(
+        res_2["data"]["all_course_progress"][2][0]["status"],
+        "NOT_STARTED"
+    );
 
     // order isn't guaranteed, so check that both course_slugs are present
     let mut found_foo = false;

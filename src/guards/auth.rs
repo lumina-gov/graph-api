@@ -1,8 +1,6 @@
-use async_graphql::{async_trait::async_trait, Guard, Context, Result};
+use async_graphql::{async_trait::async_trait, Context, Guard, Result};
 
 use crate::{error::APIError, types::user::User};
-
-
 
 pub(crate) struct AuthGuard;
 
@@ -11,7 +9,11 @@ impl Guard for AuthGuard {
     async fn check(&self, ctx: &Context<'_>) -> Result<()> {
         match ctx.data_opt::<User>() {
             Some(_) => Ok(()),
-            None => Err(APIError::new("UNAUTHENTICATED", "You must be logged in to perform this action").into()),
+            None => Err(APIError::new(
+                "UNAUTHENTICATED",
+                "You must be logged in to perform this action",
+            )
+            .into()),
         }
     }
 }

@@ -1,25 +1,30 @@
 use lambda_http::Body;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 pub async fn query(query: &str, token: &Option<String>) -> Result<Value, anyhow::Error> {
-    let app = graph_api::App::new().await
+    let app = graph_api::App::new()
+        .await
         .map_err(|e| anyhow::anyhow!(e))?;
 
     let req_body = json!({
         "query": query,
-    }).to_string();
+    })
+    .to_string();
 
     let mut request = lambda_http::Request::new(Body::from(req_body));
 
     *request.method_mut() = lambda_http::http::Method::POST;
     match token {
-        Some(token) => { request.headers_mut().append("Authorization", token.parse().unwrap()); },
+        Some(token) => {
+            request
+                .headers_mut()
+                .append("Authorization", token.parse().unwrap());
+        }
         None => {}
     }
 
-    let res = app.respond(request).await
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let res = app.respond(request).await.map_err(|e| anyhow::anyhow!(e))?;
 
     let body = res.body();
 
@@ -33,15 +38,13 @@ pub async fn login() -> Result<Option<String>, anyhow::Error> {
 
 pub async fn login_specific(email: &str) -> Result<Option<String>, anyhow::Error> {
     let res = query(
-        &format!("
-        mutation {{
-            login(
-                login_user: {{
+        &format!(
+            "mutation {{
+                auth_token(
                     email: \"{}\",
                     password: \"password\"
-                }}
-            )
-        }}",
+                )
+            }}",
             email
         ),
         &None,
@@ -52,7 +55,7 @@ pub async fn login_specific(email: &str) -> Result<Option<String>, anyhow::Error
         panic!("{}", err["message"]);
     }
 
-    Ok(res["data"]["login"].as_str().map(|s| s.to_string()))
+    Ok(res["data"]["auth_token"].as_str().map(|s| s.to_string()))
 }
 
 #[allow(dead_code)]
@@ -61,7 +64,7 @@ pub async fn create_user() -> Result<String, anyhow::Error> {
     let res = query(
         &format!(
             "mutation {{
-                create_user(create_user_input: {{
+                create_user(
                     email: \"{}\",
                     password: \"password\"
                     first_name: \"John\",
@@ -70,9 +73,8 @@ pub async fn create_user() -> Result<String, anyhow::Error> {
                     country_code: \"61\",
                     phone_number: \"000\",
                     referrer: null
-                }}
-            )
-        }}",
+                )
+            }}",
             user_email
         ),
         &None,
@@ -92,16 +94,17 @@ pub fn generate_random_email() -> String {
 pub async fn create_user_with_admin_role() -> Result<String, anyhow::Error> {
     let user_email = create_user().await?;
 
-    let res = query("
+    let res = query(
+        "
         query {
             me {
                 assign_role(role: \"admin\")
             }
         }
     ",
-        &login_specific(&user_email).await?
-    ).await?;
-
+        &login_specific(&user_email).await?,
+    )
+    .await?;
 
     assert_eq!(res["errors"], json!(null));
 

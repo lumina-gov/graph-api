@@ -17,4 +17,3 @@ async fn main() -> Result<(), Error> {
 
     run(app).await
 }
-

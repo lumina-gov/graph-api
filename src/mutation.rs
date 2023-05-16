@@ -1,32 +1,38 @@
 use std::str::FromStr;
 
-use async_graphql::{MergedObject, Context, Object};
+use async_graphql::{Context, MergedObject, Object};
 use uuid::Uuid;
 
-use crate::{types::{question_assessment::QuestionAssessment, user::{User, UserMutation}, unit_progress::{UnitProgress, UnitStatus}, citizenship_application::{CitizenshipApplicationInput, CitizenshipApplication}}, error::APIError, stripe::get_stripe_client};
-
+use crate::{
+    error::APIError,
+    guards::auth::AuthGuard,
+    stripe::get_stripe_client,
+    types::{
+        citizenship_application::{CitizenshipApplication, CitizenshipApplicationInput},
+        question_assessment::QuestionAssessment,
+        unit_progress::{UnitProgress, UnitStatus},
+        user::{User, UserMutation},
+    },
+};
 
 #[derive(MergedObject, Default)]
-pub(crate) struct Mutation(
-    BaseMutation,
-    UserMutation
-);
-
+pub(crate) struct Mutation(BaseMutation, UserMutation);
 
 #[derive(Default)]
 struct BaseMutation;
 
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl BaseMutation {
+    #[graphql(guard = "AuthGuard")]
     async fn create_citizenship_application(
         &self,
         ctx: &Context<'_>,
         citizenship_application: CitizenshipApplicationInput,
     ) -> Result<Uuid, anyhow::Error> {
-        CitizenshipApplication::create_citizenship_application(ctx, citizenship_application)
-            .await
+        CitizenshipApplication::create_citizenship_application(ctx, citizenship_application).await
     }
 
+    #[graphql(guard = "AuthGuard")]
     async fn create_light_university_checkout_session(
         &self,
         ctx: &Context<'_>,
@@ -47,11 +53,18 @@ impl BaseMutation {
 
         let session = stripe::CheckoutSession::create(&client, create_session).await?;
         match session.url {
-            None => return Err(APIError::new("COULD_NOT_CREATE_CHECKOUT_SESSION", "Could not create checkout session").into()),
+            None => {
+                return Err(APIError::new(
+                    "COULD_NOT_CREATE_CHECKOUT_SESSION",
+                    "Could not create checkout session",
+                )
+                .into())
+            }
             Some(url) => Ok(url),
         }
     }
 
+    #[graphql(guard = "AuthGuard")]
     async fn set_unit_progress(
         &self,
         ctx: &Context<'_>,
@@ -67,6 +80,7 @@ impl BaseMutation {
         Ok(unit_progress)
     }
 
+    #[graphql(guard = "AuthGuard")]
     async fn question_assessment(
         &self,
         ctx: &Context<'_>,
@@ -88,6 +102,7 @@ impl BaseMutation {
             question,
             answer,
             question_context,
-        ).await?)
+        )
+        .await?)
     }
 }

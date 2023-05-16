@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use super::user::User;
 
-const MODEL: &'static str = "gpt-3.5-turbo";
+const MODEL: &str = "gpt-3.5-turbo";
 
 #[derive(Debug, Enum, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, DbEnum)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]

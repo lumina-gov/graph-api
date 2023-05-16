@@ -1,5 +1,5 @@
-use std::{error::Error, fmt::Display};
 use async_graphql::ErrorExtensions;
+use std::{error::Error, fmt::Display};
 
 #[derive(Debug)]
 pub struct APIError {

@@ -15,7 +15,6 @@ use diesel_async::{
     pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
     AsyncPgConnection,
 };
-use dotenv;
 use error::APIError;
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;

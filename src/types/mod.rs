@@ -9,10 +9,10 @@
 // See the following issue for status about combining #[graphql_object] with #[derive(GraphQLObject)]:
 // https://github.com/graphql-rust/juniper/issues/553
 
-pub mod citizenship_application;
 pub mod applications;
+pub mod citizenship_application;
 pub mod organisation;
+pub mod question_assessment;
 pub mod unit_progress;
 pub mod user;
 pub mod utils;
-pub mod question_assessment;

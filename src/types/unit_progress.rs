@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use crate::{db_schema::unit_progress, DieselPool};
 use async_graphql::{Context, Enum, SimpleObject};
 use chrono::{serde::ts_milliseconds, DateTime, Utc};
-use diesel::{Identifiable, Insertable, Queryable, ExpressionMethods, QueryDsl, Associations, OptionalExtension};
+use diesel::{
+    Associations, ExpressionMethods, Identifiable, Insertable, OptionalExtension, QueryDsl,
+    Queryable,
+};
 use diesel_async::RunQueryDsl;
 use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
@@ -11,7 +14,17 @@ use uuid::Uuid;
 
 use super::user::User;
 
-#[derive(SimpleObject, Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable, Associations)]
+#[derive(
+    SimpleObject,
+    Debug,
+    Clone,
+    Deserialize,
+    Serialize,
+    Identifiable,
+    Queryable,
+    Insertable,
+    Associations,
+)]
 #[diesel(table_name = unit_progress)]
 #[diesel(belongs_to(User))]
 #[graphql(rename_fields = "snake_case", rename_args = "snake_case")]
@@ -47,7 +60,11 @@ impl UnitProgress {
         let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
         match diesel::insert_into(unit_progress::table)
             .values(Self::new(user.id, unit_slug, course_slug, status.clone()))
-            .on_conflict((unit_progress::user_id, unit_progress::unit_slug, unit_progress::course_slug))
+            .on_conflict((
+                unit_progress::user_id,
+                unit_progress::unit_slug,
+                unit_progress::course_slug,
+            ))
             .do_update()
             .set((
                 unit_progress::status.eq(status),
@@ -80,10 +97,10 @@ impl UnitProgress {
 
     pub async fn all_course_progress(
         ctx: &Context<'_>,
-        user: &User
+        user: &User,
     ) -> Result<Vec<Vec<Self>>, anyhow::Error> {
         let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-         // We want to get all the Unit progresses for a user, but group them by the course_slug
+        // We want to get all the Unit progresses for a user, but group them by the course_slug
         // so we can return a Vec<Vec<Self>> where each inner Vec<Self> is a course
         // and each Self is a UnitProgress
 
@@ -107,7 +124,10 @@ impl UnitProgress {
         Ok(vec_of_progress)
     }
 
-    pub async fn last_updated_unit(ctx: &Context<'_>, user: &User) -> Result<Option<Self>, anyhow::Error> {
+    pub async fn last_updated_unit(
+        ctx: &Context<'_>,
+        user: &User,
+    ) -> Result<Option<Self>, anyhow::Error> {
         let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
         Ok(unit_progress::table
             .filter(unit_progress::user_id.eq(user.id))
@@ -118,9 +138,7 @@ impl UnitProgress {
     }
 }
 
-#[derive(
-    Debug, Clone, Serialize, Deserialize, Enum, DbEnum, Copy, Eq, PartialEq
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, Enum, DbEnum, Copy, Eq, PartialEq)]
 #[ExistingTypePath = "crate::db_schema::sql_types::UnitStatus"]
 #[DbValueStyle = "PascalCase"]
 pub enum UnitStatus {

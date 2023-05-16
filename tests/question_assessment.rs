@@ -15,19 +15,16 @@ async fn can_do_question_assessment() -> Result<(), anyhow::Error> {
         "2",
         "mathematics",
         &token,
-    ).await?;
+    )
+    .await?;
 
     assert_eq!(response["errors"], json!(null));
 
     assert!(response["data"]["question_assessment"]["feedback"].is_string());
     assert!(response["data"]["question_assessment"]["assessment"].is_string());
 
-    let response = get_question_assessment(
-        "test-course",
-        "test-unit",
-        "test-question",
-        &token,
-    ).await?;
+    let response =
+        get_question_assessment("test-course", "test-unit", "test-question", &token).await?;
 
     assert_eq!(response["errors"], json!(null));
 
@@ -36,7 +33,6 @@ async fn can_do_question_assessment() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-
 async fn create_question_assessment(
     course_slug: &str,
     unit_slug: &str,
@@ -44,7 +40,7 @@ async fn create_question_assessment(
     question: &str,
     answer: &str,
     context: &str,
-    token: &Option<String>
+    token: &Option<String>,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
@@ -59,12 +55,7 @@ async fn create_question_assessment(
             }}
         }}
     "#,
-        course_slug,
-        unit_slug,
-        question_slug,
-        question,
-        answer,
-        context,
+        course_slug, unit_slug, question_slug, question, answer, context,
     );
 
     shared::query(&query, &token).await
@@ -74,7 +65,7 @@ async fn get_question_assessment(
     course_slug: &str,
     unit_slug: &str,
     question_slug: &str,
-    token: &Option<String>
+    token: &Option<String>,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
@@ -89,9 +80,7 @@ async fn get_question_assessment(
             }}
         }}
     "#,
-        course_slug,
-        unit_slug,
-        question_slug,
+        course_slug, unit_slug, question_slug,
     );
 
     shared::query(&query, &token).await

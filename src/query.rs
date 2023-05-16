@@ -1,14 +1,18 @@
-use async_graphql::{MergedObject, Object, Context};
+use async_graphql::{Context, MergedObject, Object};
 use zxcvbn::time_estimates::CrackTimeSeconds;
 
-use crate::{misc::CrackSeconds, types::{user::{User, UserQuery}, unit_progress::UnitProgress, question_assessment::QuestionAssessment}};
-
+use crate::{
+    guards::auth::AuthGuard,
+    misc::CrackSeconds,
+    types::{
+        question_assessment::QuestionAssessment,
+        unit_progress::UnitProgress,
+        user::{User, UserQuery},
+    },
+};
 
 #[derive(MergedObject, Default)]
-pub(crate) struct Query(
-    BaseQuery,
-    UserQuery,
-);
+pub(crate) struct Query(BaseQuery, UserQuery);
 
 #[derive(Default)]
 struct BaseQuery;
@@ -19,7 +23,7 @@ impl BaseQuery {
         "pong".to_string()
     }
 
-        /// Returns the crack time of a password
+    /// Returns the crack time of a password
     /// Used for password strength estimation
     /// On the frontend
     async fn crack_time(&self, password: String) -> CrackSeconds {
@@ -35,6 +39,7 @@ impl BaseQuery {
         }
     }
 
+    #[graphql(guard = "AuthGuard")]
     async fn course_progress(
         &self,
         ctx: &Context<'_>,
@@ -42,23 +47,31 @@ impl BaseQuery {
     ) -> Result<Vec<UnitProgress>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
-        let progress = UnitProgress::course_progress(ctx, user, course_slug)
-            .await?;
+        let progress = UnitProgress::course_progress(ctx, user, course_slug).await?;
 
         Ok(progress)
     }
 
-    async fn all_course_progress(&self, ctx: &Context<'_>) -> Result<Vec<Vec<UnitProgress>>, anyhow::Error> {
+    #[graphql(guard = "AuthGuard")]
+    async fn all_course_progress(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Vec<Vec<UnitProgress>>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
         Ok(UnitProgress::all_course_progress(ctx, user).await?)
     }
 
-    async fn last_updated_unit(&self, ctx: &Context<'_>) -> Result<Option<UnitProgress>, anyhow::Error> {
+    #[graphql(guard = "AuthGuard")]
+    async fn last_updated_unit(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<UnitProgress>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
         Ok(UnitProgress::last_updated_unit(ctx, user).await?)
     }
 
+    #[graphql(guard = "AuthGuard")]
     async fn question_assessment(
         &self,
         ctx: &Context<'_>,
@@ -74,6 +87,7 @@ impl BaseQuery {
             course_slug,
             unit_slug,
             question_slug,
-        ).await?)
+        )
+        .await?)
     }
 }

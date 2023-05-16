@@ -1,26 +1,26 @@
 use std::str::FromStr;
 use std::time::SystemTime;
 
-use crate::DieselPool;
-use crate::error::{APIError};
+use super::applications::Application;
+use super::citizenship_application::{CitizenshipApplication, CitizenshipStatus};
+use super::utils::jsonb::JsonB;
+use crate::db_schema::{applications, users};
+use crate::error::APIError;
 use crate::guards::auth::AuthGuard;
-use crate::db_schema::{users, applications};
 use crate::stripe::get_stripe_client;
-use async_graphql::{SimpleObject, ComplexObject, Context, Enum, Object};
+use crate::DieselPool;
+use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use chrono::serde::ts_milliseconds;
-use chrono::{DateTime, Utc, NaiveDateTime};
-use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::{
     result::DatabaseErrorKind, Identifiable, Insertable, OptionalExtension, QueryDsl, Queryable,
 };
+use diesel::{ExpressionMethods, PgJsonbExpressionMethods};
 use diesel_async::RunQueryDsl;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
 use uuid::Uuid;
-use super::applications::Application;
-use super::citizenship_application::{CitizenshipStatus, CitizenshipApplication};
-use super::utils::jsonb::JsonB;
 
 #[derive(Default)]
 pub struct UserQuery;
@@ -28,7 +28,9 @@ pub struct UserQuery;
 #[derive(Default)]
 pub struct UserMutation;
 
-#[derive(Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable, SimpleObject)]
+#[derive(
+    Debug, Clone, Deserialize, Serialize, Identifiable, Queryable, Insertable, SimpleObject,
+)]
 #[graphql(complex)]
 #[graphql(rename_fields = "snake_case", rename_args = "snake_case")]
 pub struct User {
@@ -64,23 +66,18 @@ enum SubscriptionStatus {
     None,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 struct TokenData {
     user_id: Uuid,
     created: SystemTime,
 }
 
-
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserQuery {
     async fn user_count(&self, ctx: &Context<'_>) -> Result<i32, anyhow::Error> {
         use crate::db_schema::users::dsl::*;
         let mut conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-        let data: i64 = users
-            .count()
-            .get_result(&mut conn)
-            .await?;
+        let data: i64 = users.count().get_result(&mut conn).await?;
 
         Ok(data as i32)
     }
@@ -138,9 +135,9 @@ impl UserQuery {
 
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserMutation {
-        /// Returns an authentication token if the
+    /// Returns an authentication token if the
     /// user is found and the password matches
-    pub async fn login_user(
+    async fn auth_token(
         &self,
         ctx: &Context<'_>,
         email: String,
@@ -174,7 +171,10 @@ impl UserMutation {
                     Ok(token) => Ok(token),
                     Err(_) => {
                         tracing::error!("Error creating token");
-                        Err(APIError::new("COULD_NOT_CREATE_TOKEN", "Could not create token").into())
+                        Err(
+                            APIError::new("COULD_NOT_CREATE_TOKEN", "Could not create token")
+                                .into(),
+                        )
                     }
                 }
             }
@@ -184,101 +184,9 @@ impl UserMutation {
             }
         }
     }
-}
 
-
-#[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
-impl User {
-    async fn roles(&self) -> Vec<String> {
-        //TODO frontend wants an array of roles, so implement as an array
-        match &self.role {
-            Some(role) => vec![role.clone()],
-            None => vec![],
-        }
-    }
-    async fn referral_count(&self, ctx: &Context<'_>) -> Result<i32, anyhow::Error> {
-        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-
-        let count: i64 = users::table
-            .filter(users::referrer.eq(self.id))
-            .count()
-            .get_result(conn)
-            .await?;
-
-        Ok(count as i32)
-    }
-    async fn citizenship_status(&self, ctx: &Context<'_>) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
-        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-
-        let citizenship_status = applications::table
-            .filter(applications::application_type.eq("citizenship"))
-            .filter(applications::application.contains(&serde_json::json!({ "user_id": self.id })))
-            .order_by(applications::created_at.desc())
-            .first::<Application<CitizenshipApplication>>(conn)
-            .await
-            .optional()?;
-
-        match citizenship_status {
-            Some(Application {
-                application: JsonB(CitizenshipApplication { citizenship_status, .. }),
-                ..
-            }) => Ok(Some(citizenship_status)),
-            None => Ok(None),
-        }
-    }
-
-    async fn customer_portal_url(&self, ctx: &Context<'_>, return_url: Option<String>) -> Result<String, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
-        let client = get_stripe_client();
-
-        let mut session = CreateBillingPortalSession::new(stripe::CustomerId::from_str(&stripe_customer_id)?);
-        session.return_url = return_url.as_ref().map(|url| &**url);
-
-        let session = stripe::BillingPortalSession::create(&client, session).await?;
-
-        Ok(session.url)
-    }
-
-    async fn stripe_subscription_info(&self, ctx: &Context<'_>) -> Result<SubscriptionInfo, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
-        let client = get_stripe_client();
-
-        let subscription = stripe::Subscription::list(&client, &stripe::ListSubscriptions {
-            customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
-            price: Some(PriceId::from_str(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)?),
-            ..Default::default()
-        })
-            .await?
-            .data.get(0)
-            .cloned();
-
-        match subscription {
-            Some(subscription) => {
-                let native_date_time = match NaiveDateTime::from_timestamp_millis(subscription.current_period_end) {
-                    Some(date) => date,
-                    None => return Err(APIError::new("FAILED_TO_PARSE_DATE", "Failed to parse date").into()),
-                };
-
-                let subscription_expiry_date = DateTime::<Utc>::from_utc(
-                    native_date_time,
-                    Utc,
-                );
-
-                Ok(SubscriptionInfo {
-                    expiry_date: Some(subscription_expiry_date),
-                    status: match subscription.cancel_at_period_end {
-                        true => SubscriptionStatus::Expiring,
-                        false => SubscriptionStatus::Renewing,
-                    }
-                })
-            }
-            None => Ok(SubscriptionInfo { status: SubscriptionStatus::None, expiry_date: None }),
-        }
-    }
-}
-
-impl User {
-    pub async fn create_user(
+    async fn create_user(
+        &self,
         ctx: &Context<'_>,
         email: String,
         password: String,
@@ -298,7 +206,11 @@ impl User {
                 Ok(hash) => hash,
                 Err(e) => {
                     tracing::error!("Error hashing password: {}", e);
-                    return Err(APIError::new("FAILED_TO_HASH_PASSWORD", "Failed to hash password").into());
+                    return Err(APIError::new(
+                        "FAILED_TO_HASH_PASSWORD",
+                        "Failed to hash password",
+                    )
+                    .into());
                 }
             },
             first_name,
@@ -329,7 +241,126 @@ impl User {
 
         Ok(user.id)
     }
+}
 
+#[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
+impl User {
+    async fn roles(&self) -> Vec<String> {
+        //TODO frontend wants an array of roles, so implement as an array
+        match &self.role {
+            Some(role) => vec![role.clone()],
+            None => vec![],
+        }
+    }
+    async fn referral_count(&self, ctx: &Context<'_>) -> Result<i32, anyhow::Error> {
+        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
+
+        let count: i64 = users::table
+            .filter(users::referrer.eq(self.id))
+            .count()
+            .get_result(conn)
+            .await?;
+
+        Ok(count as i32)
+    }
+    async fn citizenship_status(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
+        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
+
+        let citizenship_status = applications::table
+            .filter(applications::application_type.eq("citizenship"))
+            .filter(applications::application.contains(&serde_json::json!({ "user_id": self.id })))
+            .order_by(applications::created_at.desc())
+            .first::<Application<CitizenshipApplication>>(conn)
+            .await
+            .optional()?;
+
+        match citizenship_status {
+            Some(Application {
+                application:
+                    JsonB(CitizenshipApplication {
+                        citizenship_status, ..
+                    }),
+                ..
+            }) => Ok(Some(citizenship_status)),
+            None => Ok(None),
+        }
+    }
+
+    async fn customer_portal_url(
+        &self,
+        ctx: &Context<'_>,
+        return_url: Option<String>,
+    ) -> Result<String, anyhow::Error> {
+        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
+        let client = get_stripe_client();
+
+        let mut session =
+            CreateBillingPortalSession::new(stripe::CustomerId::from_str(&stripe_customer_id)?);
+        session.return_url = return_url.as_ref().map(|url| &**url);
+
+        let session = stripe::BillingPortalSession::create(&client, session).await?;
+
+        Ok(session.url)
+    }
+
+    async fn stripe_subscription_info(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<SubscriptionInfo, anyhow::Error> {
+        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
+        let client = get_stripe_client();
+
+        let subscription = stripe::Subscription::list(
+            &client,
+            &stripe::ListSubscriptions {
+                customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
+                price: Some(PriceId::from_str(&dotenv::var(
+                    "LIGHT_UNIVERSITY_PRICE_ID",
+                )?)?),
+                ..Default::default()
+            },
+        )
+        .await?
+        .data
+        .get(0)
+        .cloned();
+
+        match subscription {
+            Some(subscription) => {
+                let native_date_time =
+                    match NaiveDateTime::from_timestamp_millis(subscription.current_period_end) {
+                        Some(date) => date,
+                        None => {
+                            return Err(APIError::new(
+                                "FAILED_TO_PARSE_DATE",
+                                "Failed to parse date",
+                            )
+                            .into())
+                        }
+                    };
+
+                let subscription_expiry_date = DateTime::<Utc>::from_utc(native_date_time, Utc);
+
+                Ok(SubscriptionInfo {
+                    expiry_date: Some(subscription_expiry_date),
+                    status: match subscription.cancel_at_period_end {
+                        true => SubscriptionStatus::Expiring,
+                        false => SubscriptionStatus::Renewing,
+                    },
+                })
+            }
+            None => Ok(SubscriptionInfo {
+                status: SubscriptionStatus::None,
+                expiry_date: None,
+            }),
+        }
+    }
+}
+
+impl User {
     pub(crate) async fn authenticate_from_token(
         diesel: &DieselPool,
         token: String,
@@ -365,20 +396,21 @@ impl User {
         }
     }
 
-    pub async fn stripe_customer_id(
-        &self,
-        ctx: &Context<'_>,
-    ) -> Result<String, anyhow::Error> {
+    pub async fn stripe_customer_id(&self, ctx: &Context<'_>) -> Result<String, anyhow::Error> {
         match &self.stripe_customer_id {
             Some(customer_id) => Ok(customer_id.clone()),
             None => {
                 let client = get_stripe_client();
 
-                let customer = stripe::Customer::create(&client, stripe::CreateCustomer {
-                    name: Some(&format!("{} {}", self.first_name, self.last_name)),
-                    email: Some(&self.email),
-                    ..Default::default()
-                }).await?;
+                let customer = stripe::Customer::create(
+                    &client,
+                    stripe::CreateCustomer {
+                        name: Some(&format!("{} {}", self.first_name, self.last_name)),
+                        email: Some(&self.email),
+                        ..Default::default()
+                    },
+                )
+                .await?;
 
                 let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
 
