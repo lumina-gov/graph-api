@@ -10,14 +10,17 @@ pub(crate) mod variables;
 
 use std::{future::Future, ops::Deref, pin::Pin, sync::Arc};
 
-use async_graphql::{EmptySubscription, Schema};
+use async_graphql::{futures_util::future::BoxFuture, EmptySubscription, Schema};
+use diesel::{ConnectionError, ConnectionResult};
 use diesel_async::{
     pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
     AsyncPgConnection,
 };
 use error::APIError;
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
+use native_tls::TlsConnector;
 use openai::set_key;
+use postgres_native_tls::MakeTlsConnector;
 use types::user::User;
 use variables::init_non_secret_variables;
 #[derive(Clone)]
@@ -37,6 +40,34 @@ impl Deref for DieselPool {
     }
 }
 
+fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
+    Box::pin(async {
+        let connector = MakeTlsConnector::new(
+            TlsConnector::builder()
+                .build()
+                .map_err(|e| ConnectionError::BadConnection(e.to_string()))?,
+        );
+
+        let (client, connection) = tokio_postgres::connect(url, connector)
+            .await
+            .map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
+        tokio::spawn(async move {
+            if let Err(e) = connection.await {
+                eprintln!("connection error: {}", e);
+            }
+        });
+        AsyncPgConnection::try_from(client).await
+    })
+}
+
+pub async fn create_pool(db_url: &str) -> Result<Pool<AsyncPgConnection>, anyhow::Error> {
+    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new_with_setup(
+        db_url,
+        establish_connection,
+    );
+    Ok(Pool::builder(config).build()?)
+}
+
 impl App {
     pub async fn new() -> Result<Self, Error> {
         // There may or may not be a .env file, so we ignore the error.
@@ -48,9 +79,7 @@ impl App {
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
-        let config =
-            AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(postgrest_url);
-        let pool = Pool::builder(config).build()?;
+        let pool = create_pool(&postgrest_url).await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(

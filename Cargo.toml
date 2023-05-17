@@ -31,3 +31,6 @@ openai = "1.0.0-alpha.8"
 openssl = { version = "0.10", features = ["vendored"] }
 slug = "0.1.4"
 async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
+tokio-postgres = { version = "0.7.8" }
+postgres-native-tls = "0.5.0"
+native-tls = "0.2.11"

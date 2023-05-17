@@ -127,9 +127,8 @@ impl UserQuery {
         Ok(data)
     }
 
-    #[graphql(guard = "AuthGuard")]
-    async fn me(&self, ctx: &Context<'_>) -> User {
-        ctx.data_unchecked::<User>().clone()
+    async fn me(&self, ctx: &Context<'_>) -> Option<User> {
+        ctx.data_opt::<User>().cloned()
     }
 }
 
