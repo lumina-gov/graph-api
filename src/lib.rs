@@ -47,6 +47,8 @@ fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnecti
         panic!("could not load any platform certificates");
     }
 
+    println!("Loaded {} platform certificates", certs.len());
+
     Box::pin(async move {
         let mut builder = TlsConnector::builder();
 
