@@ -16,9 +16,8 @@ use diesel_async::{
     pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
     AsyncPgConnection,
 };
-use error::APIError;
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
-use native_tls::TlsConnector;
+use native_tls::{Certificate, TlsConnector};
 use openai::set_key;
 use postgres_native_tls::MakeTlsConnector;
 use types::user::User;
@@ -41,9 +40,22 @@ impl Deref for DieselPool {
 }
 
 fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
-    Box::pin(async {
+    let certs =
+        rustls_native_certs::load_native_certs().expect("could not load platform certificates");
+
+    if certs.is_empty() {
+        panic!("could not load any platform certificates");
+    }
+
+    Box::pin(async move {
+        let builder = TlsConnector::builder();
+
+        for cert in certs {
+            builder.add_root_certificate(Certificate::from_der(&cert.0).unwrap());
+        }
+
         let connector = MakeTlsConnector::new(
-            TlsConnector::builder()
+            builder
                 .build()
                 .map_err(|e| ConnectionError::BadConnection(e.to_string()))?,
         );
@@ -137,7 +149,7 @@ impl App {
         if let Some(token) = token {
             match User::authenticate_from_token(&self.diesel, token).await {
                 Ok(user) => graphql_request = graphql_request.data(user),
-                Err(e) => return Err(APIError::new("BAD_TOKEN", &e.to_string()).into()),
+                Err(e) => return Err(e),
             };
         };
 

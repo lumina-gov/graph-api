@@ -34,3 +34,4 @@ async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
 tokio-postgres = { version = "0.7.8" }
 postgres-native-tls = "0.5.0"
 native-tls = "0.2.11"
+rustls-native-certs = "0.6.2"
