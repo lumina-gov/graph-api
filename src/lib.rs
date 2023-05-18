@@ -48,7 +48,7 @@ fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnecti
     }
 
     Box::pin(async move {
-        let builder = TlsConnector::builder();
+        let mut builder = TlsConnector::builder();
 
         for cert in certs {
             builder.add_root_certificate(Certificate::from_der(&cert.0).unwrap());
