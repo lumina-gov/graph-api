@@ -1,3 +1,6 @@
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 --
 -- Name: applications; Type: TABLE; Schema: public; Owner: supabase_admin
 --
@@ -29,7 +32,7 @@ CREATE TABLE courses (
 CREATE TABLE units (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     name character varying DEFAULT ''::character varying NOT NULL,
-    id uuid DEFAULT extensions.uuid_generate_v4() PRIMARY KEY,
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     parent_unit uuid,
     course_id uuid NOT NULL,
     slug text NOT NULL

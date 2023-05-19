@@ -1,7 +1,7 @@
-use diesel::{Identifiable, Queryable, Insertable};
-use serde::{Serialize, Deserialize};
+use crate::db_schema::applications;
+use diesel::{Identifiable, Insertable, Queryable};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::schema::applications;
 
 use super::utils::jsonb::JsonB;
 

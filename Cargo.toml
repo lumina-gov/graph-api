@@ -7,9 +7,6 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
-# install juniper from master branch for now since UUID 1.0 support was added recently
-# migrate this to the crate once it has been supported
-juniper = { git = "https://github.com/graphql-rust/juniper.git", features = ["uuid", "chrono"] }
 tokio = { version = "1.24.1", features = ["rt-multi-thread", "macros"] }
 lambda_http = { version = "0.7", default-features = false, features = ["apigw_http"] }
 lambda_runtime = "0.7"
@@ -23,13 +20,14 @@ diesel = { version = "2.0.3", features=["serde_json", "uuid", "chrono"] }
 chrono =  "0.4.23"
 uuid = { version = "1.3.0", features=["serde", "v4"] }
 jsonwebtoken = "8.2.0"
-bcrypt = "0.13.0"
-
-# 2.0.0-rc.0 is the latest version that supports diesel 2.0
+bcrypt = "0.14.0"
 diesel-derive-enum = { version = "2.0.1", features = ["postgres"] }
 zxcvbn = "2.2.1"
-async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper-rustls"] }
-openai = "1.0.0-alpha.8"
-# using vendored version of openssl to avoid issues with lambda
-openssl = { version = "0.10", features = ["vendored"] }
+async-stripe = { version = "0.21.0", features = ["runtime-tokio-hyper-rustls-webpki"] }
+openai = {version = "1.0.0-alpha.8", features = ["rustls"], default-features = false }
 slug = "0.1.4"
+async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
+tokio-postgres = { version = "0.7.8" }
+webpki-roots = "0.23.0"
+tokio-postgres-rustls = "0.9.0"
+rustls = "0.20.8"

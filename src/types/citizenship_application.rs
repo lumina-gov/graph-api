@@ -1,11 +1,13 @@
-use chrono::{DateTime, Utc, serde::ts_milliseconds};
+use async_graphql::{Context, Enum, InputObject, Object};
+use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use diesel_async::RunQueryDsl;
-use juniper::{GraphQLInputObject, FieldResult, graphql_object, GraphQLEnum};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{graph::context::UniqueContext};
 
-use super::{applications::Application, utils::jsonb::JsonB, schema::applications};
+use crate::db_schema::applications;
+use crate::DieselPool;
+
+use super::{applications::Application, user::User, utils::jsonb::JsonB};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CitizenshipApplication {
@@ -24,15 +26,15 @@ pub struct CitizenshipApplication {
     pub citizenship_status: CitizenshipStatus,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, GraphQLEnum)]
+#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum CitizenshipStatus {
     Pending,
     Approved,
     Rejected,
 }
 
-#[derive(GraphQLInputObject, Clone, Debug, Serialize, Deserialize)]
-#[graphql(rename_all = "none")]
+#[derive(InputObject, Clone, Debug, Serialize, Deserialize)]
+#[graphql(rename_fields = "snake_case")]
 pub struct CitizenshipApplicationInput {
     #[serde(with = "ts_milliseconds")]
     pub date_of_birth: DateTime<Utc>,
@@ -49,11 +51,11 @@ pub struct CitizenshipApplicationInput {
 
 impl CitizenshipApplication {
     pub async fn create_citizenship_application(
-        context: &UniqueContext,
+        ctx: &Context<'_>,
         input: CitizenshipApplicationInput,
-    ) -> FieldResult<Uuid> {
-        let user = context.user()?;
-        let conn = &mut context.diesel_pool.get().await?;
+    ) -> Result<Uuid, anyhow::Error> {
+        let user = ctx.data_unchecked::<User>();
+        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
 
         let citizenship_application = CitizenshipApplication {
             citizenship_status: CitizenshipStatus::Pending,
@@ -86,12 +88,9 @@ impl CitizenshipApplication {
     }
 }
 
-#[graphql_object(
-    context = UniqueContext
-    rename_all = "none"
-)]
+#[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl CitizenshipApplication {
-    pub fn user_id(&self) -> Uuid {
+    async fn user_id(&self) -> Uuid {
         self.user_id
     }
 }

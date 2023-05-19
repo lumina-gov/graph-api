@@ -18,11 +18,18 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
         }
     "#,
         &token,
-    ).await?;
+    )
+    .await?;
 
     assert_eq!(res["errors"], json!(null));
-    assert_eq!(res["data"]["me"]["stripe_subscription_info"]["status"], "NONE");
-    assert_eq!(res["data"]["me"]["stripe_subscription_info"]["expiry_date"], json!(null));
+    assert_eq!(
+        res["data"]["me"]["stripe_subscription_info"]["status"],
+        "NONE"
+    );
+    assert_eq!(
+        res["data"]["me"]["stripe_subscription_info"]["expiry_date"],
+        json!(null)
+    );
 
     Ok(())
 }

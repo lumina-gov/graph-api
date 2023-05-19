@@ -9,6 +9,7 @@ async fn main() -> Result<(), Error> {
         .with_max_level(tracing::Level::INFO)
         // disable printing the name of the module in every log line.
         .with_target(false)
+        .log_internal_errors(true)
         // disabling time is handy because CloudWatch will add the ingestion time.
         .without_time()
         .init();
@@ -17,4 +18,3 @@ async fn main() -> Result<(), Error> {
 
     run(app).await
 }
-

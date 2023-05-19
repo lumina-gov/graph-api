@@ -1,24 +1,26 @@
+use crate::db_schema::question_assessments;
+use crate::DieselPool;
+use async_graphql::{Context, Enum, SimpleObject};
 use chrono::serde::ts_milliseconds;
-use chrono::{Utc, DateTime};
-use diesel::{Identifiable, Queryable, Insertable, ExpressionMethods, Associations, QueryDsl, OptionalExtension};
+use chrono::{DateTime, Utc};
+use diesel::{
+    Associations, ExpressionMethods, Identifiable, Insertable, OptionalExtension, QueryDsl,
+    Queryable,
+};
 use diesel_async::RunQueryDsl;
 use diesel_derive_enum::DbEnum;
-use juniper::{GraphQLObject, GraphQLEnum};
 use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::schema::question_assessments;
-
-use crate::graph::context::UniqueContext;
 
 use super::user::User;
 
-const MODEL: &'static str = "gpt-3.5-turbo";
+const MODEL: &str = "gpt-3.5-turbo";
 
-#[derive(Debug, GraphQLEnum, Clone, Copy, Serialize, Deserialize, DbEnum)]
+#[derive(Debug, Enum, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, DbEnum)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[DbValueStyle = "SCREAMING_SNAKE_CASE"]
-#[ExistingTypePath = "crate::models::schema::sql_types::Assessment"]
+#[ExistingTypePath = "crate::db_schema::sql_types::Assessment"]
 pub enum Assessment {
     Pass,
     SoftPass,
@@ -26,9 +28,19 @@ pub enum Assessment {
     Unknown,
 }
 
-#[derive(Debug, GraphQLObject, Serialize, Deserialize, Clone, Identifiable, Queryable, Insertable, Associations)]
+#[derive(
+    Debug,
+    SimpleObject,
+    Serialize,
+    Deserialize,
+    Clone,
+    Identifiable,
+    Queryable,
+    Insertable,
+    Associations,
+)]
 #[diesel(belongs_to(User))]
-#[graphql(rename_all = "none")]
+#[graphql(rename_fields = "snake_case", rename_args = "snake_case")]
 pub struct QuestionAssessment {
     id: Uuid,
     user_id: Uuid,
@@ -44,7 +56,7 @@ pub struct QuestionAssessment {
 
 impl QuestionAssessment {
     pub async fn create_assessment(
-        context: &UniqueContext,
+        ctx: &Context<'_>,
         user: &User,
         course_slug: String,
         unit_slug: String,
@@ -54,7 +66,8 @@ impl QuestionAssessment {
         question_context: Option<String>,
     ) -> Result<Self, anyhow::Error> {
         let message = ChatCompletionMessage {
-            content: format!(r#"
+            content: format!(
+                r#"
 Assess the user's response, and provide feedback and corrections if necessary.
 If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 
@@ -105,7 +118,13 @@ Respond in Pure JSON
             assessment: Assessment,
         }
 
-        let partial_assessment: PartialAssessment = serde_json::from_str(&json_string).map_err(|_| anyhow::anyhow!("Failed to serialise AI response, please try again. AI Response {}", content))?;
+        let partial_assessment: PartialAssessment =
+            serde_json::from_str(&json_string).map_err(|_| {
+                anyhow::anyhow!(
+                    "Failed to serialise AI response, please try again. AI Response {}",
+                    content
+                )
+            })?;
 
         let assessment = QuestionAssessment {
             id: Uuid::new_v4(),
@@ -119,7 +138,7 @@ Respond in Pure JSON
             updated_at: Utc::now(),
         };
 
-        let conn = &mut context.diesel_pool.get().await?;
+        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
 
         match diesel::insert_into(question_assessments::table)
             .values(&assessment)
@@ -127,7 +146,7 @@ Respond in Pure JSON
                 question_assessments::user_id,
                 question_assessments::course_slug,
                 question_assessments::unit_slug,
-                question_assessments::question_slug
+                question_assessments::question_slug,
             ))
             .do_update()
             .set((
@@ -145,13 +164,13 @@ Respond in Pure JSON
     }
 
     pub(crate) async fn get_question_assessment(
-        context: &UniqueContext,
+        ctx: &Context<'_>,
         user: &User,
         course_slug: String,
         unit_slug: String,
         question_slug: String,
     ) -> Result<Option<Self>, anyhow::Error> {
-        let conn = &mut context.diesel_pool.get().await?;
+        let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
 
         match question_assessments::table
             .filter(question_assessments::user_id.eq(user.id))
@@ -166,5 +185,4 @@ Respond in Pure JSON
             Err(e) => Err(e.into()),
         }
     }
-
 }

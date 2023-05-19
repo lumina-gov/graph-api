@@ -1,18 +1,18 @@
 mod shared;
 
 #[tokio::test]
-async fn test_ping() -> Result<(), anyhow::Error> {
+async fn test_user_count() -> Result<(), anyhow::Error> {
     let res = shared::query(
         "
         query {
-            ping
+            user_count
         }
     ",
         &None,
     )
     .await?;
 
-    assert_eq!(res["data"]["ping"], "pong");
+    assert!(res["data"]["user_count"].is_number());
 
     Ok(())
 }
