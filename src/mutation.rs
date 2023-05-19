@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::Result;
 use async_graphql::{Context, MergedObject, Object};
 use uuid::Uuid;
 
@@ -28,7 +29,7 @@ impl BaseMutation {
         &self,
         ctx: &Context<'_>,
         citizenship_application: CitizenshipApplicationInput,
-    ) -> Result<Uuid, anyhow::Error> {
+    ) -> Result<Uuid> {
         CitizenshipApplication::create_citizenship_application(ctx, citizenship_application).await
     }
 
@@ -53,13 +54,11 @@ impl BaseMutation {
 
         let session = stripe::CheckoutSession::create(&client, create_session).await?;
         match session.url {
-            None => {
-                return Err(APIError::new(
-                    "COULD_NOT_CREATE_CHECKOUT_SESSION",
-                    "Could not create checkout session",
-                )
-                .into())
-            }
+            None => Err(APIError::new(
+                "COULD_NOT_CREATE_CHECKOUT_SESSION",
+                "Could not create checkout session",
+            )
+            .into()),
             Some(url) => Ok(url),
         }
     }
@@ -75,7 +74,7 @@ impl BaseMutation {
         let user = ctx.data_unchecked::<User>();
 
         let unit_progress =
-            UnitProgress::create_or_update(ctx, &user, unit_slug, course_slug, status).await?;
+            UnitProgress::create_or_update(ctx, user, unit_slug, course_slug, status).await?;
 
         Ok(unit_progress)
     }
@@ -93,7 +92,7 @@ impl BaseMutation {
     ) -> Result<QuestionAssessment, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
-        Ok(QuestionAssessment::create_assessment(
+        QuestionAssessment::create_assessment(
             ctx,
             user,
             course_slug,
@@ -103,6 +102,6 @@ impl BaseMutation {
             answer,
             question_context,
         )
-        .await?)
+        .await
     }
 }

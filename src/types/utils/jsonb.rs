@@ -78,7 +78,7 @@ where
 {
     fn to_sql<'b>(
         &self,
-        out: &mut diesel::serialize::Output<'b, '_, Pg>,
+        out: &mut diesel::serialize::Output<'_, '_, Pg>,
     ) -> diesel::serialize::Result {
         out.write_all(&[1])?;
         serde_json::to_writer(out, self)

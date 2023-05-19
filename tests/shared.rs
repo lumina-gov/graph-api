@@ -28,7 +28,7 @@ pub async fn query(query: &str, token: &Option<String>) -> Result<Value, anyhow:
 
     let body = res.body();
 
-    Ok(serde_json::from_slice(&body)?)
+    Ok(serde_json::from_slice(body)?)
 }
 
 #[allow(dead_code)]

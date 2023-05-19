@@ -59,7 +59,7 @@ impl UnitProgress {
     ) -> Result<Self, anyhow::Error> {
         let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
         match diesel::insert_into(unit_progress::table)
-            .values(Self::new(user.id, unit_slug, course_slug, status.clone()))
+            .values(Self::new(user.id, unit_slug, course_slug, status))
             .on_conflict((
                 unit_progress::user_id,
                 unit_progress::unit_slug,

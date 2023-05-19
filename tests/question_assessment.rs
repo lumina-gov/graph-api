@@ -58,7 +58,7 @@ async fn create_question_assessment(
         course_slug, unit_slug, question_slug, question, answer, context,
     );
 
-    shared::query(&query, &token).await
+    shared::query(&query, token).await
 }
 
 async fn get_question_assessment(
@@ -83,5 +83,5 @@ async fn get_question_assessment(
         course_slug, unit_slug, question_slug,
     );
 
-    shared::query(&query, &token).await
+    shared::query(&query, token).await
 }
