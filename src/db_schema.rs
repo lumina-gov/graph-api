@@ -63,7 +63,6 @@ diesel::table! {
         phone_number -> Varchar,
         role -> Nullable<Varchar>,
         referrer -> Nullable<Uuid>,
-        stripe_customer_id -> Nullable<Varchar>,
     }
 }
 

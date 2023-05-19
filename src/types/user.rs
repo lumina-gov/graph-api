@@ -47,8 +47,6 @@ pub struct User {
     pub role: Option<String>,
     #[graphql(skip)]
     pub referrer: Option<Uuid>,
-    #[graphql(skip)]
-    pub stripe_customer_id: Option<String>,
 }
 
 #[derive(Debug, Clone, SimpleObject, Deserialize, Serialize)]
@@ -218,7 +216,6 @@ impl UserMutation {
             phone_number,
             referrer,
             role: None,
-            stripe_customer_id: None,
         };
 
         match diesel::insert_into(users::table)
