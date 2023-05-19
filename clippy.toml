@@ -1,2 +1,2 @@
 
-too-many-arguments-threshold = false
+too-many-arguments-threshold = 5
