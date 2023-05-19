@@ -23,7 +23,7 @@ jsonwebtoken = "8.2.0"
 bcrypt = "0.13.0"
 diesel-derive-enum = { version = "2.0.1", features = ["postgres"] }
 zxcvbn = "2.2.1"
-async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper-rustls"] }
+async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper"] }
 openai = "1.0.0-alpha.8"
 slug = "0.1.4"
 async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
@@ -32,4 +32,4 @@ webpki-roots = "0.23.0"
 tokio-postgres-rustls = "0.10.0"
 rustls = "0.21.1"
 # using vendored version of openssl to avoid issues with lambda
-openssl = { version = "0.10", features = ["vendored"] }
+# openssl = { version = "0.10", features = ["vendored"] }
