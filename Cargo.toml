@@ -31,3 +31,5 @@ tokio-postgres = { version = "0.7.8" }
 webpki-roots = "0.23.0"
 tokio-postgres-rustls = "0.10.0"
 rustls = "0.21.1"
+# using vendored version of openssl to avoid issues with lambda
+openssl = { version = "0.10", features = ["vendored"] }
