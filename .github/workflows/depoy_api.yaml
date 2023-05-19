@@ -16,6 +16,8 @@ jobs:
         with:
             toolchain: nightly
             override: true
+            # install aaarch64-unknown-linux-gnu target
+            target: aarch64-unknown-linux-gnu
             # components: rustfmt, clippy
       # - name: Install Zig toolchain
       #   uses: korandoru/setup-zig@v1
