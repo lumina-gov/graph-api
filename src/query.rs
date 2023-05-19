@@ -34,8 +34,8 @@ impl BaseQuery {
 
         CrackSeconds {
             guesses,
-            seconds: guesses as f64 / 100_000.0,
-            string: CrackTimeSeconds::Float(guesses as f64 / 100_000.0).to_string(),
+            seconds: guesses / 100_000.0,
+            string: CrackTimeSeconds::Float(guesses / 100_000.0).to_string(),
         }
     }
 
@@ -58,7 +58,7 @@ impl BaseQuery {
         ctx: &Context<'_>,
     ) -> Result<Vec<Vec<UnitProgress>>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
-        Ok(UnitProgress::all_course_progress(ctx, user).await?)
+        UnitProgress::all_course_progress(ctx, user).await
     }
 
     #[graphql(guard = "AuthGuard")]
@@ -68,7 +68,7 @@ impl BaseQuery {
     ) -> Result<Option<UnitProgress>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
-        Ok(UnitProgress::last_updated_unit(ctx, user).await?)
+        UnitProgress::last_updated_unit(ctx, user).await
     }
 
     #[graphql(guard = "AuthGuard")]
@@ -81,13 +81,13 @@ impl BaseQuery {
     ) -> Result<Option<QuestionAssessment>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
-        Ok(QuestionAssessment::get_question_assessment(
+        QuestionAssessment::get_question_assessment(
             ctx,
             user,
             course_slug,
             unit_slug,
             question_slug,
         )
-        .await?)
+        .await
     }
 }

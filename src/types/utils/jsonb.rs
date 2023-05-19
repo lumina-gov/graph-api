@@ -76,9 +76,9 @@ impl<T> ToSql<sql_types::Jsonb, Pg> for JsonB<T>
 where
     T: std::fmt::Debug + Serialize,
 {
-    fn to_sql<'b>(
+    fn to_sql(
         &self,
-        out: &mut diesel::serialize::Output<'b, '_, Pg>,
+        out: &mut diesel::serialize::Output<'_, '_, Pg>,
     ) -> diesel::serialize::Result {
         out.write_all(&[1])?;
         serde_json::to_writer(out, self)

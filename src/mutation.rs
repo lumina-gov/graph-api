@@ -54,7 +54,7 @@ impl BaseMutation {
         let session = stripe::CheckoutSession::create(&client, create_session).await?;
         match session.url {
             None => {
-                return Err(APIError::new(
+                Err(APIError::new(
                     "COULD_NOT_CREATE_CHECKOUT_SESSION",
                     "Could not create checkout session",
                 )
@@ -75,7 +75,7 @@ impl BaseMutation {
         let user = ctx.data_unchecked::<User>();
 
         let unit_progress =
-            UnitProgress::create_or_update(ctx, &user, unit_slug, course_slug, status).await?;
+            UnitProgress::create_or_update(ctx, user, unit_slug, course_slug, status).await?;
 
         Ok(unit_progress)
     }
@@ -93,7 +93,7 @@ impl BaseMutation {
     ) -> Result<QuestionAssessment, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
 
-        Ok(QuestionAssessment::create_assessment(
+        QuestionAssessment::create_assessment(
             ctx,
             user,
             course_slug,
@@ -103,6 +103,6 @@ impl BaseMutation {
             answer,
             question_context,
         )
-        .await?)
+        .await
     }
 }

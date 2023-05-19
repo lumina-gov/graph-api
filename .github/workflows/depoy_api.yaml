@@ -16,11 +16,11 @@ jobs:
         with:
             toolchain: nightly
             override: true
-            components: rustfmt, clippy
-      - name: Install Zig toolchain
-        uses: korandoru/setup-zig@v1
-        with:
-          zig-version: 0.10.0
+            # components: rustfmt, clippy
+      # - name: Install Zig toolchain
+      #   uses: korandoru/setup-zig@v1
+      #   with:
+      #     zig-version: 0.10.0
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
@@ -35,7 +35,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
-        run: cargo lambda build --release --arm64
+        run: cargo lambda build --release --arm64 --compiler cargo
 
       - name: Install AWS CLI
         uses: aws-actions/configure-aws-credentials@v1

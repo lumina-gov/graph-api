@@ -293,7 +293,7 @@ impl User {
 
         let mut session =
             CreateBillingPortalSession::new(stripe::CustomerId::from_str(&stripe_customer_id)?);
-        session.return_url = return_url.as_ref().map(|url| &**url);
+        session.return_url = return_url.as_deref();
 
         let session = stripe::BillingPortalSession::create(&client, session).await?;
 
