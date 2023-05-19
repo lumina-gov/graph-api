@@ -40,11 +40,16 @@ impl Deref for DieselPool {
 }
 
 fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
-    let certs =
-        rustls_native_certs::load_native_certs().expect("could not load platform certificates");
+    let certs = match rustls_native_certs::load_native_certs() {
+        Ok(certs) => certs,
+        Err(e) => {
+            eprintln!("could not load platform certificates: {}", e);
+            Vec::new()
+        }
+    };
 
     if certs.is_empty() {
-        panic!("could not load any platform certificates");
+        eprintln!("could not load any platform certificates");
     }
 
     println!("Loaded {} platform certificates", certs.len());
