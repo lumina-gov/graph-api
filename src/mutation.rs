@@ -39,7 +39,7 @@ impl BaseMutation {
         success_url: String,
     ) -> Result<String, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
-        let stripe_customer_id = user.stripe_customer_id(ctx).await?;
+        let stripe_customer_id = user.stripe_customer_id().await?;
 
         let client = get_stripe_client();
         let mut create_session = stripe::CreateCheckoutSession::new(&success_url);

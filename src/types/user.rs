@@ -6,8 +6,7 @@ use super::citizenship_application::{CitizenshipApplication, CitizenshipStatus};
 use super::utils::jsonb::JsonB;
 use crate::db_schema::{applications, users};
 use crate::error::APIError;
-use crate::guards::auth::AuthGuard;
-use crate::stripe::get_stripe_client;
+use crate::stripe::{get_stripe_client, stripe_search, SearchParams};
 use crate::DieselPool;
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use chrono::serde::ts_milliseconds;
@@ -290,10 +289,9 @@ impl User {
 
     async fn customer_portal_url(
         &self,
-        ctx: &Context<'_>,
         return_url: Option<String>,
     ) -> Result<String, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
+        let stripe_customer_id = self.stripe_customer_id().await?;
         let client = get_stripe_client();
 
         let mut session =
@@ -305,11 +303,8 @@ impl User {
         Ok(session.url)
     }
 
-    async fn stripe_subscription_info(
-        &self,
-        ctx: &Context<'_>,
-    ) -> Result<SubscriptionInfo, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id(ctx).await?;
+    async fn stripe_subscription_info(&self) -> Result<SubscriptionInfo, anyhow::Error> {
+        let stripe_customer_id = self.stripe_customer_id().await?;
         let client = get_stripe_client();
 
         let subscription = stripe::Subscription::list(
@@ -395,28 +390,37 @@ impl User {
         }
     }
 
-    pub async fn stripe_customer_id(&self, ctx: &Context<'_>) -> Result<String, anyhow::Error> {
-        match &self.stripe_customer_id {
-            Some(customer_id) => Ok(customer_id.clone()),
-            None => {
-                let client = get_stripe_client();
+    pub async fn stripe_customer_id(&self) -> Result<String, anyhow::Error> {
+        let client = get_stripe_client();
 
+        match stripe_search::<stripe::Customer>(
+            &client,
+            "customers",
+            SearchParams {
+                query: format!("metadata[\"user_id\"]:\"{}\"", self.id),
+                ..Default::default()
+            },
+        )
+        .await?
+        .data
+        .get(0)
+        {
+            Some(customer) => Ok(customer.id.to_string()),
+            None => {
                 let customer = stripe::Customer::create(
                     &client,
                     stripe::CreateCustomer {
                         name: Some(&format!("{} {}", self.first_name, self.last_name)),
                         email: Some(&self.email),
+                        metadata: Some(
+                            [("user_id".into(), self.id.to_string())]
+                                .into_iter()
+                                .collect(),
+                        ),
                         ..Default::default()
                     },
                 )
                 .await?;
-
-                let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-
-                diesel::update(users::table.find(self.id))
-                    .set(users::stripe_customer_id.eq(customer.id.to_string()))
-                    .execute(conn)
-                    .await?;
 
                 Ok(customer.id.to_string())
             }
