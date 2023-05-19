@@ -21,17 +21,13 @@ chrono =  "0.4.23"
 uuid = { version = "1.3.0", features=["serde", "v4"] }
 jsonwebtoken = "8.2.0"
 bcrypt = "0.13.0"
-
-# 2.0.0-rc.0 is the latest version that supports diesel 2.0
 diesel-derive-enum = { version = "2.0.1", features = ["postgres"] }
 zxcvbn = "2.2.1"
 async-stripe = { version = "0.18.2", features = ["runtime-tokio-hyper-rustls"] }
 openai = "1.0.0-alpha.8"
-# using vendored version of openssl to avoid issues with lambda
-openssl = { version = "0.10", features = ["vendored"] }
 slug = "0.1.4"
 async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
 tokio-postgres = { version = "0.7.8" }
-postgres-native-tls = "0.5.0"
-native-tls = "0.2.11"
-rustls-native-certs = "0.6.2"
+webpki-roots = "0.23.0"
+tokio-postgres-rustls = "0.10.0"
+rustls = "0.21.1"

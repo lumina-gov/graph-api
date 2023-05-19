@@ -5,6 +5,7 @@ pub(crate) mod misc;
 pub(crate) mod mutation;
 pub(crate) mod query;
 pub(crate) mod stripe;
+pub(crate) mod tls;
 pub(crate) mod types;
 pub(crate) mod variables;
 
@@ -17,9 +18,7 @@ use diesel_async::{
     AsyncPgConnection,
 };
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
-use native_tls::{Certificate, TlsConnector};
 use openai::set_key;
-use postgres_native_tls::MakeTlsConnector;
 use types::user::User;
 use variables::init_non_secret_variables;
 #[derive(Clone)]
@@ -40,34 +39,8 @@ impl Deref for DieselPool {
 }
 
 fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
-    let certs = match rustls_native_certs::load_native_certs() {
-        Ok(certs) => match certs.is_empty() {
-            false => certs,
-            true => {
-                eprintln!("could not load any platform certificates");
-                Vec::new()
-            }
-        },
-        Err(e) => {
-            eprintln!("could not load platform certificates: {}", e);
-            Vec::new()
-        }
-    };
-
-    println!("Loaded {} platform certificates", certs.len());
-
     Box::pin(async move {
-        let mut builder = TlsConnector::builder();
-
-        for cert in certs {
-            builder.add_root_certificate(Certificate::from_der(&cert.0).unwrap());
-        }
-
-        let connector = MakeTlsConnector::new(
-            builder
-                .build()
-                .map_err(|e| ConnectionError::BadConnection(e.to_string()))?,
-        );
+        let connector = tokio_postgres_rustls::MakeRustlsConnect::new(tls::build_client_config());
 
         let (client, connection) = tokio_postgres::connect(url, connector)
             .await
