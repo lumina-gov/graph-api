@@ -18,6 +18,21 @@ CREATE TABLE "public"."applications" (
     PRIMARY KEY ("id")
 );
 
+CREATE TABLE "public"."oauth_apps" (
+    "client_id" character varying NOT NULL,
+    "redirect_uris" character varying NOT NULL,
+    "app_name" character varying NOT NULL,
+    "client_secret" character varying,
+    PRIMARY KEY ("client_id")
+);
+
+CREATE TABLE "public"."oauth_grants" (
+    "user_id" uuid NOT NULL,
+    "client_id" character varying NOT NULL,
+    "scopes" character varying NOT NULL,
+    PRIMARY KEY ("user_id", "client_id")
+);
+
 CREATE TABLE "public"."question_assessments" (
     "id" uuid NOT NULL,
     "user_id" uuid NOT NULL,

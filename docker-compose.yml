@@ -1,0 +1,19 @@
+# for pgadmin
+
+version: "3.8"
+
+volumes:
+  pgadmin-data:
+
+services:
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "9201:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root@localhost.localdomain
+      PGADMIN_DEFAULT_PASSWORD: secret
+      PGADMIN_DISABLE_POSTFIX: "true"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
