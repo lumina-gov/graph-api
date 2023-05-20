@@ -1,65 +1,23 @@
-pub(crate) mod db_schema;
 pub(crate) mod error;
+pub(crate) mod graphql;
 pub(crate) mod guards;
 pub(crate) mod misc;
-pub(crate) mod mutation;
-pub(crate) mod query;
+pub(crate) mod schema;
 pub(crate) mod stripe;
-pub(crate) mod tls;
-pub(crate) mod types;
 pub(crate) mod variables;
 
-use std::{future::Future, ops::Deref, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use async_graphql::{futures_util::future::BoxFuture, EmptySubscription, Schema};
-use diesel::{ConnectionError, ConnectionResult};
-use diesel_async::{
-    pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
-    AsyncPgConnection,
-};
+use async_graphql::{EmptySubscription, Schema};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
-use types::user::User;
+use schema::users::User;
+use sea_orm::{Database, DatabaseConnection};
 use variables::init_non_secret_variables;
 #[derive(Clone)]
 pub struct App {
-    schema: Arc<Schema<query::Query, mutation::Mutation, EmptySubscription>>,
-    diesel: DieselPool,
-}
-
-#[derive(Clone)]
-struct DieselPool(Arc<Pool<AsyncPgConnection>>);
-
-impl Deref for DieselPool {
-    type Target = Pool<AsyncPgConnection>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
-    Box::pin(async move {
-        let connector = tokio_postgres_rustls::MakeRustlsConnect::new(tls::build_client_config());
-
-        let (client, connection) = tokio_postgres::connect(url, connector)
-            .await
-            .map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
-        tokio::spawn(async move {
-            if let Err(e) = connection.await {
-                eprintln!("connection error: {}", e);
-            }
-        });
-        AsyncPgConnection::try_from(client).await
-    })
-}
-
-pub async fn create_pool(db_url: &str) -> Result<Pool<AsyncPgConnection>, anyhow::Error> {
-    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new_with_setup(
-        db_url,
-        establish_connection,
-    );
-    Ok(Pool::builder(config).build()?)
+    schema: Arc<Schema<graphql::query::Query, graphql::mutation::Mutation, EmptySubscription>>,
+    diesel: DatabaseConnection,
 }
 
 impl App {
@@ -73,15 +31,15 @@ impl App {
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
-        let pool = create_pool(&postgrest_url).await?;
+        let db = Database::connect("protocol://username:password@host/database").await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(
-                query::Query::default(),
-                mutation::Mutation::default(),
+                graphql::query::Query::default(),
+                graphql::mutation::Mutation::default(),
                 EmptySubscription,
             )),
-            diesel: DieselPool(Arc::new(pool)),
+            diesel: db,
         })
     }
 
@@ -129,7 +87,7 @@ impl App {
             .transpose()?;
 
         if let Some(token) = token {
-            match User::authenticate_from_token(&self.diesel, token).await {
+            match User::authenticate_from_token(&self.db, token).await {
                 Ok(user) => graphql_request = graphql_request.data(user),
                 Err(e) => return Err(e),
             };

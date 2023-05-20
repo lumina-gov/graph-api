@@ -1,6 +1,6 @@
 use async_graphql::{async_trait::async_trait, Context, Guard, Result};
 
-use crate::{error::APIError, types::user::User};
+use crate::{error::APIError, graphql::user::User};
 
 pub(crate) struct AuthGuard;
 
