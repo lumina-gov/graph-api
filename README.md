@@ -27,15 +27,6 @@ OPENAI_KEY=
 3. Run `cargo lambda watch`
 4. You can now use the endpoint `http://localhost:9000/lambda-url/graph-api/`
 
-#### MacOS Installation Instructions
-
-Run the following commands in order
-
-1. `brew install postgresql libpq`
-2. `cargo clean`
-3. `cargo build`
-4. `cargo install diesel_cli --no-default-features --features postgres`
-
 ### Deployment
 
 > Deployment has already been automated so we should not be doing this anymore
@@ -52,18 +43,10 @@ Run the following commands in order
 
 ### Generate ORM
 
-1. Make sure you have libpg installed (on Gentoo, `emerge dev-db/postgresql`).
+- Load .env with `set -o allexport; source .env; set +o allexport`
 
-2. Install diesel-cli with `cargo install diesel_cli --no-default-features --features postgres`.
+- Generate ORM: `sea-orm-cli generate entity -u $DATABASE_URL -o src/entities`
 
-### Generating Migrations
+### Migrations
 
-`diesel migration generate migration_name_here`
-
-`diesel migration run` to run all migrations and create the schema
-
-`diesel migration revert` to go back one migration
-
-`diesel migration redo` to go back one migration and then forward again
-
-Then run the step to print the schema as shown above
+Edit schema.sql and then run `./migrate.sh`.
