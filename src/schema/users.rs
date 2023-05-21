@@ -16,7 +16,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub email: String,
-    pub joined: DateTimeWithTimeZone,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub joined: chrono::DateTime<chrono::Utc>,
     #[graphql(skip)]
     pub password: String,
     pub first_name: String,

@@ -80,4 +80,6 @@ CREATE TABLE "public"."users" (
     PRIMARY KEY ("id")
 );
 
+ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_referrer_fkey" FOREIGN KEY ("referrer") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+
 CREATE UNIQUE INDEX index_users_email ON public.users USING btree (email);

@@ -24,6 +24,7 @@ pub struct App {
 
 impl App {
     pub async fn new() -> Result<Self, Error> {
+        // setup tracking for logs
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
             // disable printing the name of the module in every log line.
@@ -31,7 +32,8 @@ impl App {
             .log_internal_errors(true)
             // disabling time is handy because CloudWatch will add the ingestion time.
             .without_time()
-            .init();
+            .try_init()
+            .ok();
 
         // There may or may not be a .env file, so we ignore the error.
         dotenv::dotenv().ok();

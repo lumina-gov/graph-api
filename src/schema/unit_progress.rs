@@ -19,7 +19,8 @@ pub struct Model {
     pub unit_slug: String,
     pub course_slug: String,
     pub status: UnitStatus,
-    pub updated_at: DateTimeWithTimeZone,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
