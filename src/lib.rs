@@ -1,9 +1,9 @@
 pub(crate) mod auth;
-pub(crate) mod entities;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
 pub(crate) mod misc;
+pub(crate) mod schema;
 pub(crate) mod stripe;
 pub(crate) mod variables;
 

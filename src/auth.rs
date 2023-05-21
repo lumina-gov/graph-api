@@ -1,13 +1,13 @@
-use std::time::SystemTime;
-
-use crate::entities::{prelude::*, *};
 use crate::error::APIError;
+use crate::graphql::user::User;
+use crate::schema::users::UserEntity;
 use anyhow::anyhow;
 use anyhow::Result;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use lambda_http::Request;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Deserialize;
+use std::time::SystemTime;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -16,14 +16,16 @@ struct Payload {
     created: SystemTime,
 }
 
-pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<users::Model> {
+pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<User> {
     match jsonwebtoken::decode::<Payload>(
-        &token,
+        token,
         &DecodingKey::from_secret(std::env::var("JWT_SECRET")?.as_bytes()),
         &Validation::new(Algorithm::HS256),
     ) {
         Ok(payload) => {
-            let user = Users::find_by_id(payload.claims.user_id).one(db).await?;
+            let user = UserEntity::find_by_id(payload.claims.user_id)
+                .one(db)
+                .await?;
             user.ok_or(anyhow!("Invalid user id"))
         }
         Err(e) => {
@@ -33,10 +35,10 @@ pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<
     }
 }
 
-pub async fn authenticate_request(db: &DatabaseConnection, event: Request) -> Result<users::Model> {
+pub async fn authenticate_request(db: &DatabaseConnection, event: Request) -> Result<User> {
     let header = event.headers().get("Authorization");
 
-    if let Some(header) = header.map(|h| h.to_str().ok()).flatten() {
+    if let Some(header) = header.and_then(|h| h.to_str().ok()) {
         if let Some(("", token)) = header.split_once("Bearer ") {
             authenticate_token(db, token).await
         } else {
