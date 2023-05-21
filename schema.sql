@@ -30,6 +30,7 @@ CREATE TABLE "public"."oauth_grants" (
     "user_id" uuid NOT NULL,
     "client_id" character varying NOT NULL,
     "scopes" character varying NOT NULL,
+    "refresh_token" character varying NOT NULL,
     PRIMARY KEY ("user_id", "client_id")
 );
 

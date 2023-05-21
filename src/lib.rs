@@ -1,17 +1,18 @@
+pub(crate) mod auth;
+pub(crate) mod entities;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
 pub(crate) mod misc;
-pub(crate) mod schema;
 pub(crate) mod stripe;
 pub(crate) mod variables;
 
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use async_graphql::{EmptySubscription, Schema};
+use auth::authenticate_request;
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
-use schema::users::User;
 use sea_orm::{Database, DatabaseConnection};
 use variables::init_non_secret_variables;
 #[derive(Clone)]
@@ -31,7 +32,7 @@ impl App {
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
-        let db = Database::connect(&postgrest_url).await?;
+        let db = Database::connect(postgrest_url).await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(
@@ -79,21 +80,11 @@ impl App {
         let mut graphql_request =
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        // get token from header
-        let token = event
-            .headers()
-            .get("Authorization")
-            .map(|v| v.to_str().map(|s| s.to_string()))
-            .transpose()?;
-
-        if let Some(token) = token {
-            match User::authenticate_from_token(&self.db, token).await {
-                Ok(user) => graphql_request = graphql_request.data(user),
-                Err(e) => return Err(e),
-            };
-        };
-
-        Ok(self.schema.execute(graphql_request).await)
+        if let user = authenticate_request(&self.db, event).await {
+            Ok(self.schema.execute(graphql_request.data(user)).await)
+        } else {
+            Ok(self.schema.execute(graphql_request).await)
+        }
     }
 
     async fn handle_post(&self, event: Request) -> Result<Response<Body>, Error> {
