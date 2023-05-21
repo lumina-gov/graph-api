@@ -2,7 +2,6 @@
 
 use super::sea_orm_active_enums::Assessment;
 use async_graphql::SimpleObject;
-use chrono::serde::ts_milliseconds;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +18,6 @@ pub struct Model {
     pub answer: String,
     pub assessment: Assessment,
     pub feedback: String,
-    #[serde(with = "ts_milliseconds")]
     pub updated_at: DateTimeWithTimeZone,
 }
 

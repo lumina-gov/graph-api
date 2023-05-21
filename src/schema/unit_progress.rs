@@ -2,7 +2,6 @@
 
 use super::sea_orm_active_enums::UnitStatus;
 use async_graphql::SimpleObject;
-use chrono::serde::ts_milliseconds;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +15,6 @@ pub struct Model {
     pub unit_slug: String,
     pub course_slug: String,
     pub status: UnitStatus,
-    #[serde(with = "ts_milliseconds")]
     pub updated_at: DateTimeWithTimeZone,
 }
 

@@ -15,7 +15,7 @@ impl UnitProgress {
             unit_slug,
             course_slug,
             status,
-            updated_at: Utc::now(),
+            updated_at: Utc::now().into(),
         }
     }
 

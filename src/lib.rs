@@ -17,7 +17,7 @@ use variables::init_non_secret_variables;
 #[derive(Clone)]
 pub struct App {
     schema: Arc<Schema<graphql::query::Query, graphql::mutation::Mutation, EmptySubscription>>,
-    diesel: DatabaseConnection,
+    db: DatabaseConnection,
 }
 
 impl App {
@@ -31,7 +31,7 @@ impl App {
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
-        let db = Database::connect("protocol://username:password@host/database").await?;
+        let db = Database::connect(&postgrest_url).await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(
@@ -39,7 +39,7 @@ impl App {
                 graphql::mutation::Mutation::default(),
                 EmptySubscription,
             )),
-            diesel: db,
+            db,
         })
     }
 
@@ -77,7 +77,7 @@ impl App {
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
         let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.diesel.clone());
+            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
         // get token from header
         let token = event

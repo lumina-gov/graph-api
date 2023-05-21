@@ -3,24 +3,24 @@ use std::{str::FromStr, time::SystemTime};
 pub use crate::schema::users::User;
 use crate::{
     error::APIError,
-    schema::users::{self, UserEntity},
+    schema::{
+        applications::{self, ApplicationEntity},
+        users::{self, UserActiveModel, UserEntity},
+    },
     stripe::{get_stripe_client, stripe_search, SearchParams},
 };
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use sea_orm::{
-    sea_query::OnConflict, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter,
+    sea_query::{Expr, OnConflict},
+    ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
 };
 use serde::{Deserialize, Serialize};
-use stripe::{Application, CreateBillingPortalSession, PriceId};
+use stripe::{CreateBillingPortalSession, PriceId};
 use uuid::Uuid;
 
-use super::{
-    citizenship_application::{CitizenshipApplication, CitizenshipStatus},
-    utils::jsonb::JsonB,
-};
+use super::citizenship_application::{CitizenshipApplication, CitizenshipStatus};
 
 #[derive(Default)]
 pub struct UserQuery;
@@ -174,17 +174,7 @@ impl UserMutation {
             id: Uuid::new_v4(),
             email,
             joined: Utc::now().into(),
-            password: match bcrypt::hash(&password, bcrypt::DEFAULT_COST) {
-                Ok(hash) => hash,
-                Err(e) => {
-                    tracing::error!("Error hashing password: {}", e);
-                    return Err(APIError::new(
-                        "FAILED_TO_HASH_PASSWORD",
-                        "Failed to hash password",
-                    )
-                    .into());
-                }
-            },
+            password: bcrypt::hash(&password, bcrypt::DEFAULT_COST)?,
             first_name,
             last_name,
             calling_code,
@@ -194,24 +184,33 @@ impl UserMutation {
             role: None,
         };
 
+        let active_model: UserActiveModel = user.clone().into();
+
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        match UserEntity::insert(user.into())
-            .on_conflict(OnConflict::column(users::Column::Email))
+        match UserEntity::insert(active_model)
+            .on_conflict(
+                OnConflict::column(users::Column::Email)
+                    .do_nothing()
+                    .to_owned(),
+            )
             .exec_with_returning(conn)
+            .await
         {
-            Ok(_) => tracing::info!("User created: {}", &user.email),
-            // Err(diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
-            //     tracing::error!("User already exists: {}", &user.email);
-            //     return Err(APIError::new("USER_ALREADY_EXISTS", "User already exists").into());
-            // }
-            Err(e) => {
-                tracing::error!("Error creating user: {}", e);
-                return Err(e.into());
+            Ok(model) => {
+                tracing::info!("User created: {}", &user.email);
+                Ok(model.id)
             }
+            Err(DbErr::RecordNotInserted) => Err(APIError::new(
+                "USER_ALREADY_EXISTS",
+                &format!("User already exists: {}", &user.email),
+            ))?,
+            Err(e) => Err(APIError::new_with_detail(
+                "FAILED_TO_CREATE_USER",
+                &format!("Failed to create user"),
+                &format!("{:?}", e),
+            ))?,
         }
-
-        Ok(user.id)
     }
 }
 
@@ -224,38 +223,38 @@ impl User {
             None => vec![],
         }
     }
-    async fn referral_count(&self, ctx: &Context<'_>) -> Result<i32, anyhow::Error> {
+    async fn referral_count(&self, ctx: &Context<'_>) -> Result<u64, anyhow::Error> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        let count: i64 = unimplemented!();
-        Ok(count as i32)
+        let count = UserEntity::find()
+            .filter(users::Column::Referrer.eq(self.id))
+            .count(conn)
+            .await?;
+
+        Ok(count)
     }
     async fn citizenship_status(
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
-        unimplemented!()
-        // let conn = ctx.data_unchecked::<DatabaseConnection>();
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        // let citizenship_status = unimplemented!();
-        // // applications::table
-        // //     .filter(applications::application_type.eq("citizenship"))
-        // //     .filter(applications::application.contains(&serde_json::json!({ "user_id": self.id })))
-        // //     .order_by(applications::created_at.desc())
-        // //     .first::<Application<CitizenshipApplication>>(conn)
-        // //     .await
-        // //     .optional()?;
-
-        // match citizenship_status {
-        //     Some(Application {
-        //         application:
-        //             JsonB(CitizenshipApplication {
-        //                 citizenship_status, ..
-        //             }),
-        //         ..
-        //     }) => Ok(Some(citizenship_status)),
-        //     None => Ok(None),
-        // }
+        match ApplicationEntity::find()
+            .filter(applications::Column::ApplicationType.eq("citizenship"))
+            .filter(Expr::cust_with_expr(
+                "application->>'user_id'",
+                self.id.to_string(),
+            ))
+            .order_by(applications::Column::CreatedAt, sea_orm::Order::Desc)
+            .one(conn)
+            .await?
+        {
+            Some(application) => {
+                let json: CitizenshipApplication = serde_json::from_value(application.application)?;
+                Ok(Some(json.citizenship_status))
+            }
+            None => Ok(None),
+        }
     }
 
     async fn customer_portal_url(
@@ -327,36 +326,32 @@ impl User {
 
 impl User {
     pub(crate) async fn authenticate_from_token(
-        diesel: &DatabaseConnection,
+        conn: &DatabaseConnection,
         token: String,
     ) -> Result<User, anyhow::Error> {
-        unimplemented!()
-        // // We want to use a "sliding window" token so there is no direct expiry time.
-        // // We will use the database to store the "last used" time of the token.
-        // // This means if a user constantly uses the same token within the window they will not be logged out.
+        // We want to use a "sliding window" token so there is no direct expiry time.
+        // We will use the database to store the "last used" time of the token.
+        // This means if a user constantly uses the same token within the window they will not be logged out.
 
-        // let mut validation = Validation::new(Algorithm::HS256);
-        // // remove default required_spec_claims
-        // validation.set_required_spec_claims::<&str>(&[]);
-        // // disable expiry valiation
-        // validation.validate_exp = false;
+        let mut validation = Validation::new(Algorithm::HS256);
+        // remove default required_spec_claims
+        validation.set_required_spec_claims::<&str>(&[]);
+        // disable expiry valiation
+        validation.validate_exp = false;
 
-        // match jsonwebtoken::decode::<TokenData>(
-        //     &token,
-        //     &DecodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
-        //     &validation,
-        // ) {
-        //     Ok(decoded) => {
-        //         let conn = &mut diesel.get().await?;
-        //         let user = unimplemented!();
+        let decoded = jsonwebtoken::decode::<TokenData>(
+            &token,
+            &DecodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
+            &validation,
+        )
+        .map_err(|e| {
+            APIError::new_with_detail("INVALID_TOKEN", "Invalid auth token", &format!("{:?}", e))
+        })?;
 
-        //         Ok(user)
-        //     }
-        //     Err(e) => {
-        //         tracing::error!("Invalid auth token: {}", e);
-        //         Err(APIError::new("INVALID_TOKEN", "Invalid auth token").into())
-        //     }
-        // }
+        UserEntity::find_by_id(decoded.claims.user_id)
+            .one(conn)
+            .await?
+            .ok_or_else(|| APIError::new("USER_NOT_FOUND", "User not found").into())
     }
 
     pub async fn stripe_customer_id(&self) -> Result<String, anyhow::Error> {
