@@ -28,12 +28,10 @@ jobs:
           version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
-      - name: Install diesel_cli
-        run: cargo install diesel_cli --no-default-features --features postgres
-      - name: Run database migration
-        run: ./migrate.sh
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # - name: Run database migration
+      #   run: ./migrate.sh
+      #   env:
+      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
         run: cargo lambda build --release --arm64
 
