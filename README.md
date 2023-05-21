@@ -4,7 +4,7 @@ A serverless function that implements the GraphQL API for Lumina services. It us
 
 Further documentation for the AWS Rust runtime is available [here](https://github.com/awslabs/aws-lambda-rust-runtime).
 
-### temp---- where things go
+### temporary notes - where things go
 
 if it updates the database
 -> graphql/mutations
@@ -14,14 +14,6 @@ if it reads the database and is a top-level query
 
 if it reads the database and is a method of an object 
 -> graphlql/types
-
-all graphql types should be defined in graphql/types
-- however, if you don't want to duplicate sea-orm types (in schema/), add for example `pub type User = users::Model;`
-- so that all graphql types are imported from graphql/ and not schema/
-
-using the types
-- `User` should always mean the GraphQL type, which in some cases is the same as the database type (e.g.  `pub type User = users::Model;`)
-- Refer to database types as `users::Entity`, `users::Entity` and `users::ActiveModel`
 
 ### Configuration
 
