@@ -47,7 +47,7 @@ CREATE TABLE "public"."question_assessments" (
     PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX idx_assessment_questions_user_course_unit_question ON public.question_assessments USING btree (user_id, course_slug, unit_slug, question_slug);
+CREATE UNIQUE INDEX index_assessment_questions_user_course_unit_question ON public.question_assessments USING btree (user_id, course_slug, unit_slug, question_slug);
 
 ALTER TABLE ONLY "public"."question_assessments" ADD CONSTRAINT "question_assessments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 
@@ -79,3 +79,5 @@ CREATE TABLE "public"."users" (
     "referrer" uuid,
     PRIMARY KEY ("id")
 );
+
+CREATE UNIQUE INDEX index_users_email ON public.users USING btree (email);

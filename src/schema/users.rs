@@ -6,8 +6,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject, Deserialize, Serialize)]
 #[sea_orm(table_name = "users")]
-#[graphql(complex)]
-#[graphql(rename_fields = "snake_case", rename_args = "snake_case")]
+#[graphql(
+    concrete(name = "User", params()),
+    complex,
+    rename_fields = "snake_case",
+    rename_args = "snake_case"
+)]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,

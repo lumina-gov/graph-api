@@ -10,9 +10,10 @@ pub(crate) mod variables;
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use async_graphql::{EmptySubscription, Schema};
-use auth::authenticate_request;
+use auth::{authenticate_request, authenticate_token};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
+use schema::users::User;
 use sea_orm::{Database, DatabaseConnection};
 use variables::init_non_secret_variables;
 #[derive(Clone)]
@@ -23,6 +24,15 @@ pub struct App {
 
 impl App {
     pub async fn new() -> Result<Self, Error> {
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            // disable printing the name of the module in every log line.
+            .with_target(false)
+            .log_internal_errors(true)
+            // disabling time is handy because CloudWatch will add the ingestion time.
+            .without_time()
+            .init();
+
         // There may or may not be a .env file, so we ignore the error.
         dotenv::dotenv().ok();
         init_non_secret_variables();
@@ -80,11 +90,21 @@ impl App {
         let mut graphql_request =
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        if let user = authenticate_request(&self.db, event).await {
-            Ok(self.schema.execute(graphql_request.data(user)).await)
-        } else {
-            Ok(self.schema.execute(graphql_request).await)
-        }
+        // get token from header
+        let token = event
+            .headers()
+            .get("Authorization")
+            .map(|v| v.to_str().map(|s| s.to_string()))
+            .transpose()?;
+
+        if let Some(token) = token {
+            match User::authenticate_from_token(&self.db, token).await {
+                Ok(user) => graphql_request = graphql_request.data(user),
+                Err(e) => return Err(e),
+            };
+        };
+
+        Ok(self.schema.execute(graphql_request).await)
     }
 
     async fn handle_post(&self, event: Request) -> Result<Response<Body>, Error> {
