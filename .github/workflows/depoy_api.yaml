@@ -31,7 +31,7 @@ jobs:
       - name: Install diesel_cli
         run: cargo install diesel_cli --no-default-features --features postgres
       - name: Run database migration
-        run: diesel migration run
+        run: ./migrate.sh
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build

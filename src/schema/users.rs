@@ -28,6 +28,8 @@ pub struct Model {
     pub role: Option<String>,
     #[graphql(skip)]
     pub referrer: Option<Uuid>,
+    #[graphql(skip)]
+    pub stripe_customer_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

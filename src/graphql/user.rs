@@ -7,14 +7,15 @@ use crate::{
         applications::{self, ApplicationEntity},
         users::{self, UserActiveModel, UserEntity},
     },
-    stripe::{get_stripe_client, stripe_search, SearchParams},
+    stripe::get_stripe_client,
 };
 use async_graphql::{ComplexObject, Context, Enum, Object, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use sea_orm::{
     sea_query::{Expr, OnConflict},
-    ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
@@ -182,6 +183,7 @@ impl UserMutation {
             phone_number,
             referrer,
             role: None,
+            stripe_customer_id: None,
         };
 
         let active_model: UserActiveModel = user.clone().into();
@@ -259,9 +261,11 @@ impl User {
 
     async fn customer_portal_url(
         &self,
+        ctx: &Context<'_>,
         return_url: Option<String>,
     ) -> Result<String, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id().await?;
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
+        let stripe_customer_id = self.stripe_customer_id(conn).await?;
         let client = get_stripe_client();
 
         let mut session =
@@ -273,8 +277,12 @@ impl User {
         Ok(session.url)
     }
 
-    async fn stripe_subscription_info(&self) -> Result<SubscriptionInfo, anyhow::Error> {
-        let stripe_customer_id = self.stripe_customer_id().await?;
+    async fn stripe_subscription_info(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<SubscriptionInfo, anyhow::Error> {
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
+        let stripe_customer_id = self.stripe_customer_id(conn).await?;
         let client = get_stripe_client();
 
         let subscription = stripe::Subscription::list(
@@ -354,22 +362,15 @@ impl User {
             .ok_or_else(|| APIError::new("USER_NOT_FOUND", "User not found").into())
     }
 
-    pub async fn stripe_customer_id(&self) -> Result<String, anyhow::Error> {
+    pub async fn stripe_customer_id(
+        &self,
+        conn: &DatabaseConnection,
+    ) -> Result<String, anyhow::Error> {
         let client = get_stripe_client();
 
-        match stripe_search::<stripe::Customer>(
-            &client,
-            "customers",
-            SearchParams {
-                query: format!("metadata[\"user_id\"]:\"{}\"", self.id),
-                ..Default::default()
-            },
-        )
-        .await?
-        .data
-        .get(0)
-        {
-            Some(customer) => Ok(customer.id.to_string()),
+        // use stripe_customer_id if it exists
+        match &self.stripe_customer_id {
+            Some(customer) => Ok(customer.clone()),
             None => {
                 let customer = stripe::Customer::create(
                     &client,
@@ -385,6 +386,14 @@ impl User {
                     },
                 )
                 .await?;
+
+                // update user with stripe_customer_id
+                let user = UserActiveModel {
+                    stripe_customer_id: Set(Some(customer.id.to_string())),
+                    ..Default::default()
+                };
+
+                user.update(conn).await?;
 
                 Ok(customer.id.to_string())
             }

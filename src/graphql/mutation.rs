@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use async_graphql::{Context, MergedObject, Object};
+use sea_orm::DatabaseConnection;
 use uuid::Uuid;
 
 use crate::{
@@ -41,8 +42,9 @@ impl BaseMutation {
         ctx: &Context<'_>,
         success_url: String,
     ) -> Result<String, anyhow::Error> {
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = ctx.data_unchecked::<User>();
-        let stripe_customer_id = user.stripe_customer_id().await?;
+        let stripe_customer_id = user.stripe_customer_id(conn).await?;
 
         let client = get_stripe_client();
         let mut create_session = stripe::CreateCheckoutSession::new(&success_url);

@@ -77,6 +77,7 @@ CREATE TABLE "public"."users" (
     "phone_number" character varying NOT NULL,
     "role" character varying,
     "referrer" uuid,
+    "stripe_customer_id" character varying,
     PRIMARY KEY ("id")
 );
 
