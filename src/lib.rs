@@ -1,24 +1,23 @@
+pub(crate) mod applications;
 pub(crate) mod auth;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
-pub(crate) mod misc;
 pub(crate) mod schema;
-pub(crate) mod stripe;
-pub(crate) mod variables;
+pub(crate) mod util;
 
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use async_graphql::{EmptySubscription, Schema};
-use auth::{authenticate_request, authenticate_token};
+use auth::authenticate_request;
+use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
-use schema::users::User;
 use sea_orm::{Database, DatabaseConnection};
-use variables::init_non_secret_variables;
+use util::variables::init_non_secret_variables;
 #[derive(Clone)]
 pub struct App {
-    schema: Arc<Schema<graphql::query::Query, graphql::mutation::Mutation, EmptySubscription>>,
+    schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
     db: DatabaseConnection,
 }
 
@@ -48,8 +47,8 @@ impl App {
 
         Ok(Self {
             schema: Arc::new(Schema::new(
-                graphql::query::Query::default(),
-                graphql::mutation::Mutation::default(),
+                Query::default(),
+                Mutation::default(),
                 EmptySubscription,
             )),
             db,
@@ -92,18 +91,8 @@ impl App {
         let mut graphql_request =
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        // get token from header
-        let token = event
-            .headers()
-            .get("Authorization")
-            .map(|v| v.to_str().map(|s| s.to_string()))
-            .transpose()?;
-
-        if let Some(token) = token {
-            match User::authenticate_from_token(&self.db, token).await {
-                Ok(user) => graphql_request = graphql_request.data(user),
-                Err(e) => return Err(e),
-            };
+        if let Ok(user) = authenticate_request(&self.db, event).await {
+            graphql_request = graphql_request.data(user);
         };
 
         Ok(self.schema.execute(graphql_request).await)

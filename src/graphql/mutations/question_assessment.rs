@@ -1,26 +1,15 @@
-use async_graphql::Context;
+use async_graphql::{Context, Object};
+use uuid::Uuid;
 
-use crate::schema::question_assessments::QuestionAssessment;
+#[derive(Default)]
+pub struct QuestionAssessmentMutation;
 
-use super::user::User;
-
-const MODEL: &str = "gpt-3.5-turbo";
-
-// #[derive(Debug, Enum, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, DbEnum)]
-// #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-// #[DbValueStyle = "SCREAMING_SNAKE_CASE"]
-// #[ExistingTypePath = "crate::db_schema::sql_types::Assessment"]
-// pub enum Assessment {
-//     Pass,
-//     SoftPass,
-//     Fail,
-//     Unknown,
-// }
-
-impl QuestionAssessment {
+#[Object(rename_fields = "snake_case", rename_args = "snake_case")]
+impl QuestionAssessmentMutation {
     pub async fn create_assessment(
+        &self,
         ctx: &Context<'_>,
-        user: &User,
+        user: Uuid,
         course_slug: String,
         unit_slug: String,
         question_slug: String,
@@ -125,29 +114,5 @@ impl QuestionAssessment {
         //             Ok(assessment) => Ok(assessment),
         //             Err(e) => Err(e.into()),
         //         }
-    }
-
-    pub(crate) async fn get_question_assessment(
-        ctx: &Context<'_>,
-        user: &User,
-        course_slug: String,
-        unit_slug: String,
-        question_slug: String,
-    ) -> Result<Option<Self>, anyhow::Error> {
-        unimplemented!()
-        // let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-
-        // match question_assessments::table
-        //     .filter(question_assessments::user_id.eq(user.id))
-        //     .filter(question_assessments::course_slug.eq(course_slug))
-        //     .filter(question_assessments::unit_slug.eq(unit_slug))
-        //     .filter(question_assessments::question_slug.eq(question_slug))
-        //     .first::<Self>(conn)
-        //     .await
-        //     .optional()
-        // {
-        //     Ok(assessment) => Ok(assessment),
-        //     Err(e) => Err(e.into()),
-        // }
     }
 }

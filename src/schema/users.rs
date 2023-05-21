@@ -53,7 +53,3 @@ impl Related<super::unit_progress::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
-
-pub type User = Model;
-pub type UserEntity = Entity;
-pub type UserActiveModel = ActiveModel;

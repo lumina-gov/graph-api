@@ -1,19 +1,19 @@
 use crate::error::APIError;
-use crate::graphql::user::User;
-use crate::schema::users::UserEntity;
+use crate::graphql::types::user::User;
+use crate::schema::users;
 use anyhow::anyhow;
 use anyhow::Result;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use lambda_http::Request;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::DatabaseConnection;
+use sea_orm::EntityTrait;
 use serde::Deserialize;
-use std::time::SystemTime;
+use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
-struct Payload {
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Payload {
     user_id: Uuid,
-    created: SystemTime,
 }
 
 pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<User> {
@@ -23,7 +23,7 @@ pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<
         &Validation::new(Algorithm::HS256),
     ) {
         Ok(payload) => {
-            let user = UserEntity::find_by_id(payload.claims.user_id)
+            let user = users::Entity::find_by_id(payload.claims.user_id)
                 .one(db)
                 .await?;
             user.ok_or(anyhow!("Invalid user id"))

@@ -5,11 +5,10 @@ use async_graphql::SimpleObject;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, SimpleObject)]
 #[sea_orm(table_name = "question_assessments")]
 #[graphql(
     rename_fields = "snake_case",
-    rename_args = "snake_case",
     concrete(name = "QuestionAssessment", params())
 )]
 pub struct Model {
@@ -44,7 +43,3 @@ impl Related<super::users::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
-
-pub type QuestionAssessment = Model;
-pub type QuestionAssessmentEntity = Entity;
-pub type QuestionAssessmentActiveModel = ActiveModel;

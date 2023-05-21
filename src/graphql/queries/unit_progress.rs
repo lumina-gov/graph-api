@@ -1,60 +1,10 @@
-use async_graphql::Context;
-use chrono::Utc;
-use sea_orm::DatabaseConnection;
-use uuid::Uuid;
+#[derive(Default)]
+pub struct UnitProgressQuery;
 
-use crate::schema::{sea_orm_active_enums::UnitStatus, unit_progress::UnitProgress};
-
-use super::user::User;
-
-impl UnitProgress {
-    fn new(user_id: Uuid, unit_slug: String, course_slug: String, status: UnitStatus) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            user_id,
-            unit_slug,
-            course_slug,
-            status,
-            updated_at: Utc::now().into(),
-        }
-    }
-
-    pub async fn create_or_update(
-        ctx: &Context<'_>,
-        user: &User,
-        unit_slug: String,
-        course_slug: String,
-        status: UnitStatus,
-    ) -> Result<Self, anyhow::Error> {
-        let conn = ctx.data_unchecked::<DatabaseConnection>();
-        let unit_progress = Self::new(user.id, unit_slug, course_slug, status);
-
-        unimplemented!()
-        // match UnitProgressEntity::insert(unit_progress).on_conflict(
-        //     seq_query::OnConflict::
-        // ) {}
-
-        // match diesel::insert_into(unit_progress::table)
-        //     .values(Self::new(user.id, unit_slug, course_slug, status))
-        //     .on_conflict((
-        //         unit_progress::user_id,
-        //         unit_progress::unit_slug,
-        //         unit_progress::course_slug,
-        //     ))
-        //     .do_update()
-        //     .set((
-        //         unit_progress::status.eq(status),
-        //         unit_progress::updated_at.eq(Utc::now()),
-        //     ))
-        //     .get_result(conn)
-        //     .await
-        // {
-        //     Ok(unit_progress) => Ok(unit_progress),
-        //     Err(e) => Err(e.into()),
-        // }
-    }
-
+#[Object]
+impl UnitProgressQuery {
     pub async fn course_progress(
+        &self,
         ctx: &Context<'_>,
         user: &User,
         course_slug: String,
@@ -73,6 +23,7 @@ impl UnitProgress {
     }
 
     pub async fn all_course_progress(
+        &self,
         ctx: &Context<'_>,
         user: &User,
     ) -> Result<Vec<Vec<Self>>, anyhow::Error> {
@@ -103,6 +54,7 @@ impl UnitProgress {
     }
 
     pub async fn last_updated_unit(
+        &self,
         ctx: &Context<'_>,
         user: &User,
     ) -> Result<Option<Self>, anyhow::Error> {
@@ -116,12 +68,3 @@ impl UnitProgress {
         //     .optional()?)
     }
 }
-
-// #[derive(Debug, Clone, Serialize, Deserialize, Enum, DbEnum, Copy, Eq, PartialEq)]
-// #[ExistingTypePath = "crate::db_schema::sql_types::UnitStatus"]
-// #[DbValueStyle = "PascalCase"]
-// pub enum UnitStatus {
-//     NotStarted,
-//     InProgress,
-//     Completed,
-// }

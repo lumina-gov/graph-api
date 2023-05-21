@@ -42,7 +42,3 @@ impl Related<super::users::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
-
-pub type UnitProgress = Model;
-pub type UnitProgressEntity = Entity;
-pub type UnitProgressActiveModel = ActiveModel;

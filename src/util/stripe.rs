@@ -8,7 +8,7 @@ pub fn get_stripe_client() -> stripe::Client {
 }
 
 #[derive(Serialize, Default, Debug)]
-pub(crate) struct SearchParams {
+pub struct SearchParams {
     pub query: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u64>,
@@ -16,7 +16,7 @@ pub(crate) struct SearchParams {
     pub page: Option<u64>,
 }
 
-pub(crate) async fn stripe_search<R: DeserializeOwned + 'static + Send>(
+pub async fn stripe_search<R: DeserializeOwned + 'static + Send>(
     client: &stripe::Client,
     resource: &str,
     params: SearchParams,
