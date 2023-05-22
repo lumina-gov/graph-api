@@ -1,5 +1,12 @@
-use crate::guards::auth::AuthGuard;
+use crate::{
+    graphql::types::unit_progress::{
+        UnitProgressActiveModel, UnitProgressColumn, UnitProgressEntity,
+    },
+    guards::auth::AuthGuard,
+};
 use async_graphql::{Context, Object};
+use sea_orm::{sea_query::OnConflict, DatabaseConnection, EntityTrait};
+use uuid::Uuid;
 
 use crate::graphql::types::{
     unit_progress::{UnitProgress, UnitStatus},
@@ -20,29 +27,29 @@ impl UnitProgressMutation {
         status: UnitStatus,
     ) -> Result<UnitProgress, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        unimplemented!()
-        // match UnitProgressEntity::insert(unit_progress).on_conflict(
-        //     seq_query::OnConflict::
-        // ) {}
+        let unit_progress: UnitProgressActiveModel = UnitProgress {
+            id: Uuid::new_v4(),
+            course_slug: course_slug.clone(),
+            unit_slug: unit_slug.clone(),
+            user_id: user.id,
+            status,
+            updated_at: chrono::Utc::now(),
+        }
+        .into();
 
-        // match diesel::insert_into(unit_progress::table)
-        //     .values(Self::new(user.id, unit_slug, course_slug, status))
-        //     .on_conflict((
-        //         unit_progress::user_id,
-        //         unit_progress::unit_slug,
-        //         unit_progress::course_slug,
-        //     ))
-        //     .do_update()
-        //     .set((
-        //         unit_progress::status.eq(status),
-        //         unit_progress::updated_at.eq(Utc::now()),
-        //     ))
-        //     .get_result(conn)
-        //     .await
-        // {
-        //     Ok(unit_progress) => Ok(unit_progress),
-        //     Err(e) => Err(e.into()),
-        // }
+        Ok(UnitProgressEntity::insert(unit_progress)
+            .on_conflict(
+                OnConflict::columns([
+                    UnitProgressColumn::UserId,
+                    UnitProgressColumn::UnitSlug,
+                    UnitProgressColumn::CourseSlug,
+                ])
+                .update_columns([UnitProgressColumn::Status, UnitProgressColumn::UpdatedAt])
+                .to_owned(),
+            )
+            .exec_with_returning(conn)
+            .await?)
     }
 }

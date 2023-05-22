@@ -1,10 +1,11 @@
+use async_graphql::Enum;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{error::APIError, graphql::types::application::Application};
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CitizenshipApplication {
+pub struct CitizenshipApplication {
     pub date_of_birth: DateTime<Utc>,
     pub sex: String,
     pub first_name: String,
@@ -15,10 +16,14 @@ struct CitizenshipApplication {
     pub country_of_birth: String,
     pub country_of_residence: String,
     pub ethnic_groups: Vec<String>,
+    pub citizenship_status: CitizenshipStatus,
 }
 
-struct VolunteerApplication {
-    pub foo: String,
+#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum CitizenshipStatus {
+    Pending,
+    Approved,
+    Rejected,
 }
 
 pub async fn validate_application(app: &Application) -> Result<(), APIError> {

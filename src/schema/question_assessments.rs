@@ -2,8 +2,10 @@
 
 use super::sea_orm_active_enums::Assessment;
 use async_graphql::SimpleObject;
+use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, SimpleObject)]
 #[sea_orm(table_name = "question_assessments")]
@@ -21,7 +23,7 @@ pub struct Model {
     pub answer: String,
     pub assessment: Assessment,
     pub feedback: String,
-    pub updated_at: DateTimeWithTimeZone,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

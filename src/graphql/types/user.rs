@@ -1,15 +1,23 @@
 use std::str::FromStr;
 
+use crate::{
+    applications::{CitizenshipApplication, CitizenshipStatus},
+    error::APIError,
+    schema::users,
+    util::stripe::get_stripe_client,
+};
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    Set,
+    sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
 
-use crate::{error::APIError, schema::users, util::stripe::get_stripe_client};
+pub type User = users::Model;
+pub type UserActiveModel = users::ActiveModel;
+pub type UserColumn = users::Column;
 
 #[derive(Debug, Clone, SimpleObject, Deserialize, Serialize)]
 #[graphql(rename_fields = "snake_case", rename_args = "snake_case")]
@@ -24,8 +32,6 @@ enum SubscriptionStatus {
     Expiring,
     None,
 }
-
-pub type User = users::Model;
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl User {
@@ -48,29 +54,29 @@ impl User {
         Ok(count)
     }
 
-    // async fn citizenship_status(
-    //     &self,
-    //     ctx: &Context<'_>,
-    // ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
-    //     let conn = ctx.data_unchecked::<DatabaseConnection>();
+    async fn citizenship_status(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-    //     match applications::Entity::find()
-    //         .filter(ci::Column::ApplicationType.eq("citizenship"))
-    //         .filter(Expr::cust_with_expr(
-    //             "application->>'user_id'",
-    //             self.id.to_string(),
-    //         ))
-    //         .order_by(applications::Column::CreatedAt, sea_orm::Order::Desc)
-    //         .one(conn)
-    //         .await?
-    //     {
-    //         Some(application) => {
-    //             let json: CitizenshipApplication = serde_json::from_value(application.application)?;
-    //             Ok(Some(json.citizenship_status))
-    //         }
-    //         None => Ok(None),
-    //     }
-    // }
+        match crate::schema::applications::Entity::find()
+            .filter(crate::schema::applications::Column::ApplicationType.eq("citizenship"))
+            .filter(Expr::cust_with_expr(
+                "application->>'user_id'",
+                self.id.to_string(),
+            ))
+            .order_by_desc(crate::schema::applications::Column::CreatedAt)
+            .one(conn)
+            .await?
+        {
+            Some(application) => {
+                let json: CitizenshipApplication = serde_json::from_value(application.application)?;
+                Ok(Some(json.citizenship_status))
+            }
+            None => Ok(None),
+        }
+    }
 
     async fn customer_portal_url(
         &self,

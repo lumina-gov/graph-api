@@ -1,118 +1,134 @@
 use async_graphql::{Context, Object};
+use chrono::Utc;
+use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
+use sea_orm::{sea_query::OnConflict, DatabaseConnection, EntityTrait};
+use serde::Deserialize;
 use uuid::Uuid;
+
+use crate::{
+    graphql::types::{
+        question_assessment::{
+            QuestionAssessment, QuestionAssessmentActiveModel, QuestionAssessmentColumn,
+            QuestionAssessmentEntity,
+        },
+        user::User,
+    },
+    guards::auth::AuthGuard,
+    schema::sea_orm_active_enums::Assessment,
+};
+
+const MODEL: &str = "gpt-3.5-turbo";
 
 #[derive(Default)]
 pub struct QuestionAssessmentMutation;
 
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl QuestionAssessmentMutation {
+    #[graphql(guard = "AuthGuard")]
     pub async fn create_assessment(
         &self,
         ctx: &Context<'_>,
-        user: Uuid,
         course_slug: String,
         unit_slug: String,
         question_slug: String,
         question: String,
         answer: String,
         question_context: Option<String>,
-    ) -> Result<Self, anyhow::Error> {
-        unimplemented!()
-        //         let message = ChatCompletionMessage {
-        //             content: format!(
-        //                 r#"
-        // Assess the user's response, and provide feedback and corrections if necessary.
-        // If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
+    ) -> Result<QuestionAssessment, anyhow::Error> {
+        let user = ctx.data_unchecked::<User>();
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        // type HumanString = string
-        // type Response = {{
-        //     feedback: HumanString
-        //     assessment: Assessment
-        // }}
-        // type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
+        let message = ChatCompletionMessage {
+            content: format!(
+                r#"
+Assess the user's response, and provide feedback and corrections if necessary.
+If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 
-        // Course Slug: "{}"
-        // Unit Slug: "{}"
-        // Question:
-        // {}
-        // {}
-        // User Answer:
-        // {}
-        // <END USER ANSWER>
+type HumanString = string
+type Response = {{
+    feedback: HumanString
+    assessment: Assessment
+}}
+type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
 
-        // Respond in Pure JSON
-        // ---
-        // {{
-        //     "feedback": ""#,
-        //                 course_slug,
-        //                 unit_slug,
-        //                 question,
-        //                 match question_context {
-        //                     Some(question_context) => format!("Context\n{}", question_context),
-        //                     None => String::new(),
-        //                 },
-        //                 answer,
-        //             ),
-        //             name: Some(slug::slugify(&user.first_name)),
-        //             role: ChatCompletionMessageRole::User,
-        //         };
+Course Slug: "{}"
+Unit Slug: "{}"
+Question:
+{}
+{}
+User Answer:
+{}
+<END USER ANSWER>
 
-        //         let response = openai::chat::ChatCompletion::builder(MODEL, [message])
-        //             .create()
-        //             .await??;
+Respond in Pure JSON
+---
+{{
+    "feedback": ""#,
+                course_slug,
+                unit_slug,
+                question,
+                match question_context {
+                    Some(question_context) => format!("Context\n{}", question_context),
+                    None => String::new(),
+                },
+                answer,
+            ),
+            name: Some(slug::slugify(&user.first_name)),
+            role: ChatCompletionMessageRole::User,
+        };
 
-        //         let content = response.choices[0].message.content.clone();
+        let response = openai::chat::ChatCompletion::builder(MODEL, [message])
+            .create()
+            .await??;
 
-        //         let json_string: String = format!(r#"{{ "feedback": "{}"#, content);
+        let content = response.choices[0].message.content.clone();
 
-        //         #[derive(Debug, Deserialize)]
-        //         struct PartialAssessment {
-        //             feedback: String,
-        //             assessment: Assessment,
-        //         }
+        let json_string: String = format!(r#"{{ "feedback": "{}"#, content);
 
-        //         let partial_assessment: PartialAssessment =
-        //             serde_json::from_str(&json_string).map_err(|_| {
-        //                 anyhow::anyhow!(
-        //                     "Failed to serialise AI response, please try again. AI Response {}",
-        //                     content
-        //                 )
-        //             })?;
+        #[derive(Debug, Deserialize)]
+        struct PartialAssessment {
+            feedback: String,
+            assessment: Assessment,
+        }
 
-        //         let assessment = QuestionAssessment {
-        //             id: Uuid::new_v4(),
-        //             user_id: user.id,
-        //             course_slug,
-        //             unit_slug,
-        //             question_slug,
-        //             answer,
-        //             assessment: partial_assessment.assessment,
-        //             feedback: partial_assessment.feedback,
-        //             updated_at: Utc::now(),
-        //         };
+        let partial_assessment: PartialAssessment =
+            serde_json::from_str(&json_string).map_err(|_| {
+                anyhow::anyhow!(
+                    "Failed to serialise AI response, please try again. AI Response {}",
+                    content
+                )
+            })?;
 
-        //         let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
+        let assessment: QuestionAssessmentActiveModel = QuestionAssessment {
+            id: Uuid::new_v4(),
+            user_id: user.id,
+            course_slug,
+            unit_slug,
+            question_slug,
+            answer,
+            assessment: partial_assessment.assessment,
+            feedback: partial_assessment.feedback,
+            updated_at: Utc::now(),
+        }
+        .into();
 
-        //         match diesel::insert_into(question_assessments::table)
-        //             .values(&assessment)
-        //             .on_conflict((
-        //                 question_assessments::user_id,
-        //                 question_assessments::course_slug,
-        //                 question_assessments::unit_slug,
-        //                 question_assessments::question_slug,
-        //             ))
-        //             .do_update()
-        //             .set((
-        //                 question_assessments::feedback.eq(&assessment.feedback),
-        //                 question_assessments::answer.eq(&assessment.answer),
-        //                 question_assessments::assessment.eq(&assessment.assessment),
-        //                 question_assessments::updated_at.eq(Utc::now()),
-        //             ))
-        //             .get_result(conn)
-        //             .await
-        //         {
-        //             Ok(assessment) => Ok(assessment),
-        //             Err(e) => Err(e.into()),
-        //         }
+        Ok(QuestionAssessmentEntity::insert(assessment)
+            .on_conflict(
+                OnConflict::columns([
+                    QuestionAssessmentColumn::UserId,
+                    QuestionAssessmentColumn::CourseSlug,
+                    QuestionAssessmentColumn::UnitSlug,
+                    QuestionAssessmentColumn::QuestionSlug,
+                ])
+                .update_columns([
+                    QuestionAssessmentColumn::Answer,
+                    QuestionAssessmentColumn::Assessment,
+                    QuestionAssessmentColumn::Feedback,
+                    QuestionAssessmentColumn::UpdatedAt,
+                ])
+                .to_owned(),
+            )
+            .exec_with_returning(conn)
+            .await?)
     }
 }

@@ -21,8 +21,8 @@ impl BaseQuery {
 
         CrackSeconds {
             guesses,
-            seconds: guesses / 100_000.0,
-            string: CrackTimeSeconds::Float(guesses / 100_000.0).to_string(),
+            seconds: guesses / 50_000.0,
+            string: CrackTimeSeconds::Float(guesses / 50_000.0).to_string(),
         }
     }
 }

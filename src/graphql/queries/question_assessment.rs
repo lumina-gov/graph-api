@@ -1,5 +1,9 @@
-use crate::guards::auth::AuthGuard;
+use crate::{
+    graphql::types::question_assessment::{QuestionAssessmentColumn, QuestionAssessmentEntity},
+    guards::auth::AuthGuard,
+};
 use async_graphql::{Context, Object};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::graphql::types::{question_assessment::QuestionAssessment, user::User};
 
@@ -17,21 +21,14 @@ impl QuestionAssessmentQuery {
         question_slug: String,
     ) -> Result<Option<QuestionAssessment>, anyhow::Error> {
         let user = ctx.data_unchecked::<User>();
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        unimplemented!()
-        // let conn = &mut ctx.data_unchecked::<DieselPool>().get().await?;
-
-        // match question_assessments::table
-        //     .filter(question_assessments::user_id.eq(user.id))
-        //     .filter(question_assessments::course_slug.eq(course_slug))
-        //     .filter(question_assessments::unit_slug.eq(unit_slug))
-        //     .filter(question_assessments::question_slug.eq(question_slug))
-        //     .first::<Self>(conn)
-        //     .await
-        //     .optional()
-        // {
-        //     Ok(assessment) => Ok(assessment),
-        //     Err(e) => Err(e.into()),
-        // }
+        Ok(QuestionAssessmentEntity::find()
+            .filter(QuestionAssessmentColumn::UserId.eq(user.id))
+            .filter(QuestionAssessmentColumn::CourseSlug.eq(course_slug))
+            .filter(QuestionAssessmentColumn::UnitSlug.eq(unit_slug))
+            .filter(QuestionAssessmentColumn::QuestionSlug.eq(question_slug))
+            .one(conn)
+            .await?)
     }
 }
