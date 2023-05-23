@@ -69,7 +69,6 @@ impl User {
                 "application->>'user_id' = $1",
                 self.id.to_string(),
             ))
-            // .filter(Expr::col(applications::Column::Application).cast_json_field("user_id"))
             .order_by_desc(applications::Column::CreatedAt)
             .one(conn)
             .await?
