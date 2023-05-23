@@ -28,10 +28,10 @@ jobs:
           version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
-      # - name: Run database migration
-      #   run: ./migrate.sh
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Run database migration
+        run: ./migrate.sh
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
         run: cargo lambda build --release --arm64
 
