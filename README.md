@@ -2,7 +2,7 @@
 
 A serverless function that implements the GraphQL API for Lumina services. It uses a PostgeSQL database, `async-graphql` to serve GraphQL queries and is designed to be deployed to AWS Lambda.
 
-### temporary notes - where things go
+### Where things go
 
 if it updates the database
 -> graphql/mutations
