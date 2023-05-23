@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Payload {
-    user_id: Uuid,
+    pub user_id: Uuid,
 }
 
 pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<User> {
