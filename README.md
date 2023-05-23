@@ -24,7 +24,7 @@ DATABASE_URL="postgres://${PG_USER}:${PG_PASSWORD}@${PG_HOST}/${PG_DATABASE}?ssl
 JWT_SECRET=
 STRIPE_SECRET_KEY=
 OPENAI_KEY=
-
+SENDGRID_KEY=
 ```
 
 ### Local Development
