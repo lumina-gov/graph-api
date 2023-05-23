@@ -12,7 +12,7 @@ if it updates the database
 if it reads the database and is a top-level query
 -> graphql/queries
 
-if it reads the database and is a method of an object 
+if it reads the database and is a method of an object
 -> graphlql/types
 
 ### Configuration
@@ -20,10 +20,6 @@ if it reads the database and is a method of an object
 Create a .env file based on the following template:
 
 ```
-PG_DATABASE=
-PG_HOST=
-PG_USER=
-PG_PASSWORD=
 DATABASE_URL="postgres://${PG_USER}:${PG_PASSWORD}@${PG_HOST}/${PG_DATABASE}?sslmode=require"
 JWT_SECRET=
 STRIPE_SECRET_KEY=
