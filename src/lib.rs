@@ -1,92 +1,62 @@
-pub(crate) mod db_schema;
+pub(crate) mod applications;
+pub(crate) mod auth;
 pub(crate) mod error;
+pub(crate) mod graphql;
 pub(crate) mod guards;
-pub(crate) mod misc;
-pub(crate) mod mutation;
-pub(crate) mod query;
-pub(crate) mod stripe;
-pub(crate) mod tls;
-pub(crate) mod types;
-pub(crate) mod variables;
+pub(crate) mod schema;
+pub(crate) mod util;
 
-use std::{future::Future, ops::Deref, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use async_graphql::{futures_util::future::BoxFuture, EmptySubscription, Schema};
-use diesel::{ConnectionError, ConnectionResult};
-use diesel_async::{
-    pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager},
-    AsyncPgConnection,
-};
+use async_graphql::{EmptySubscription, Schema};
+use auth::authenticate_request;
+use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
-use types::user::User;
-use variables::init_non_secret_variables;
+use sea_orm::{Database, DatabaseConnection};
+use util::variables::init_non_secret_variables;
 #[derive(Clone)]
 pub struct App {
-    schema: Arc<Schema<query::Query, mutation::Mutation, EmptySubscription>>,
-    diesel: DieselPool,
-}
-
-#[derive(Clone)]
-struct DieselPool(Arc<Pool<AsyncPgConnection>>);
-
-impl Deref for DieselPool {
-    type Target = Pool<AsyncPgConnection>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-fn establish_connection(url: &str) -> BoxFuture<ConnectionResult<AsyncPgConnection>> {
-    Box::pin(async move {
-        let connector = tokio_postgres_rustls::MakeRustlsConnect::new(tls::build_client_config());
-
-        let (client, connection) = tokio_postgres::connect(url, connector)
-            .await
-            .map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
-        tokio::spawn(async move {
-            if let Err(e) = connection.await {
-                eprintln!("connection error: {}", e);
-            }
-        });
-        AsyncPgConnection::try_from(client).await
-    })
-}
-
-pub async fn create_pool(db_url: &str) -> Result<Pool<AsyncPgConnection>, anyhow::Error> {
-    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new_with_setup(
-        db_url,
-        establish_connection,
-    );
-    Ok(Pool::builder(config).build()?)
+    schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
+    db: DatabaseConnection,
 }
 
 impl App {
     pub async fn new() -> Result<Self, Error> {
-        // There may or may not be a .env file, so we ignore the error.
+        // setup tracking for logs
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            // disable printing the name of the module in every log line.
+            .with_target(false)
+            .log_internal_errors(true)
+            // disabling time is handy because CloudWatch will add the ingestion time.
+            .without_time()
+            .try_init()
+            .ok();
+
+        // There is not a .env file in prod, so we ignore the error.
         dotenv::dotenv().ok();
         init_non_secret_variables();
 
-        set_key(dotenv::var("OPENAI_KEY").unwrap());
+        set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
 
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
-        let pool = create_pool(&postgrest_url).await?;
+        let db = Database::connect(postgrest_url).await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(
-                query::Query::default(),
-                mutation::Mutation::default(),
+                Query::default(),
+                Mutation::default(),
                 EmptySubscription,
             )),
-            diesel: DieselPool(Arc::new(pool)),
+            db,
         })
     }
 
     pub async fn respond(&self, event: Request) -> Result<Response<Body>, Error> {
-        println!("Handling {} request...", event.method());
+        tracing::info!("Handling {} request...", event.method());
         let response = Response::builder();
 
         match *event.method() {
@@ -119,23 +89,22 @@ impl App {
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
         let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.diesel.clone());
+            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        // get token from header
-        let token = event
-            .headers()
-            .get("Authorization")
-            .map(|v| v.to_str().map(|s| s.to_string()))
-            .transpose()?;
-
-        if let Some(token) = token {
-            match User::authenticate_from_token(&self.diesel, token).await {
-                Ok(user) => graphql_request = graphql_request.data(user),
-                Err(e) => return Err(e),
-            };
+        match authenticate_request(&self.db, event).await {
+            Ok(Some(user)) => {
+                graphql_request = graphql_request.data(user);
+            }
+            Ok(None) => {}
+            Err(e) => {
+                return Ok(async_graphql::Response::from_errors(vec![
+                    e.into_server_error(async_graphql::Pos { line: 0, column: 0 })
+                ]))
+            }
         };
+        let res = self.schema.execute(graphql_request).await;
 
-        Ok(self.schema.execute(graphql_request).await)
+        Ok(res)
     }
 
     async fn handle_post(&self, event: Request) -> Result<Response<Body>, Error> {

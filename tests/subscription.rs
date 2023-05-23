@@ -33,3 +33,22 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn fails() -> Result<(), anyhow::Error> {
+    let res = shared::query(
+        r#"
+        query {
+            all_course_progress {
+                course_slug
+            }
+        }
+    "#,
+        &None,
+    )
+    .await?;
+
+    assert_eq!(res["errors"][0]["extensions"]["code"], "UNAUTHENTICATED",);
+
+    Ok(())
+}
