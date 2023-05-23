@@ -24,7 +24,7 @@ pub async fn set_unit_progress(
         course_slug, unit_slug, status
     );
 
-    shared::query(&query, &token).await
+    shared::query(&query, token).await
 }
 
 async fn last_updated_unit(token: &Option<String>) -> Result<serde_json::Value, anyhow::Error> {
@@ -41,7 +41,7 @@ async fn last_updated_unit(token: &Option<String>) -> Result<serde_json::Value, 
             }
         }
     "#,
-        &token,
+        token,
     )
     .await
 }

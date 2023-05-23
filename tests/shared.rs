@@ -17,9 +17,10 @@ pub async fn query(query: &str, token: &Option<String>) -> Result<Value, anyhow:
     *request.method_mut() = lambda_http::http::Method::POST;
     match token {
         Some(token) => {
-            request
-                .headers_mut()
-                .append("Authorization", token.parse().unwrap());
+            request.headers_mut().append(
+                "Authorization",
+                format!("Bearer {}", token).parse().unwrap(),
+            );
         }
         None => {}
     }
@@ -28,7 +29,7 @@ pub async fn query(query: &str, token: &Option<String>) -> Result<Value, anyhow:
 
     let body = res.body();
 
-    Ok(serde_json::from_slice(&body)?)
+    Ok(serde_json::from_slice(body)?)
 }
 
 #[allow(dead_code)]
