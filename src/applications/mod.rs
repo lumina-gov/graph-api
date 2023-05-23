@@ -6,6 +6,7 @@ use crate::{error::new_err, graphql::types::application::Application};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CitizenshipApplication {
+    pub user_id: uuid::Uuid,
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub date_of_birth: DateTime<Utc>,
     pub sex: String,
