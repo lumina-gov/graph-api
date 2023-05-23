@@ -65,7 +65,11 @@ impl User {
 
         match applications::Entity::find()
             .filter(applications::Column::ApplicationType.eq("citizenship"))
-            .filter(Expr::col(applications::Column::Application).cast_json_field("user_id"))
+            .filter(Expr::cust_with_expr(
+                "application->>'user_id' = $1",
+                self.id.to_string(),
+            ))
+            // .filter(Expr::col(applications::Column::Application).cast_json_field("user_id"))
             .order_by_desc(applications::Column::CreatedAt)
             .one(conn)
             .await?
