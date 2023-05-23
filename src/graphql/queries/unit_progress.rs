@@ -8,7 +8,7 @@ use crate::{graphql::types::user::User, guards::auth::AuthGuard, schema::unit_pr
 #[derive(Default)]
 pub struct UnitProgressQuery;
 
-#[Object]
+#[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UnitProgressQuery {
     #[graphql(guard = "AuthGuard")]
     pub async fn course_progress(

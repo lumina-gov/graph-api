@@ -1,8 +1,8 @@
 use crate::error::APIError;
 use crate::graphql::types::user::User;
 use crate::schema::users;
-use anyhow::anyhow;
-use anyhow::Result;
+use chrono::DateTime;
+use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use lambda_http::Request;
 use sea_orm::DatabaseConnection;
@@ -12,39 +12,49 @@ use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct Payload {
+pub struct TokenPayload {
     pub user_id: Uuid,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub created: DateTime<Utc>,
 }
 
-pub async fn authenticate_token(db: &DatabaseConnection, token: &str) -> Result<User> {
-    match jsonwebtoken::decode::<Payload>(
+pub async fn authenticate_token(
+    db: &DatabaseConnection,
+    token: &str,
+) -> Result<User, anyhow::Error> {
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.validate_exp = false;
+    validation.set_required_spec_claims::<&str>(&[]);
+
+    let payload = jsonwebtoken::decode::<TokenPayload>(
         token,
         &DecodingKey::from_secret(std::env::var("JWT_SECRET")?.as_bytes()),
-        &Validation::new(Algorithm::HS256),
-    ) {
-        Ok(payload) => {
-            let user = users::Entity::find_by_id(payload.claims.user_id)
-                .one(db)
-                .await?;
-            user.ok_or(anyhow!("Invalid user id"))
-        }
-        Err(e) => {
-            tracing::error!("Invalid auth token: {}", e);
-            Err(APIError::new("INVALID_TOKEN", "Invalid auth token").into())
-        }
-    }
+        &validation,
+    )
+    .map_err(|_| APIError::new("INVALID_TOKEN", "Invalid auth token"))?
+    .claims;
+
+    let user = users::Entity::find_by_id(payload.user_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| APIError::new("INVALID_TOKEN", "User does not exist"))?;
+
+    Ok(user)
 }
 
-pub async fn authenticate_request(db: &DatabaseConnection, event: Request) -> Result<User> {
+pub async fn authenticate_request(
+    db: &DatabaseConnection,
+    event: Request,
+) -> Result<Option<User>, anyhow::Error> {
     let header = event.headers().get("Authorization");
 
     if let Some(header) = header.and_then(|h| h.to_str().ok()) {
-        if let Some(("", token)) = header.split_once("Bearer ") {
-            authenticate_token(db, token).await
+        if let Some(token) = header.strip_prefix("Bearer ") {
+            Ok(Some(authenticate_token(db, token).await?))
         } else {
-            Err(anyhow!("Invalid Authorization token, must be Bearer"))
+            Err(APIError::new("INVALID_TOKEN", "Auth header should use Bearer").into())
         }
     } else {
-        Err(anyhow!("No Authorization header"))
+        Ok(None)
     }
 }

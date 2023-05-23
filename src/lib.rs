@@ -34,11 +34,11 @@ impl App {
             .try_init()
             .ok();
 
-        // There may or may not be a .env file, so we ignore the error.
+        // There is not a .env file in prod, so we ignore the error.
         dotenv::dotenv().ok();
         init_non_secret_variables();
 
-        set_key(dotenv::var("OPENAI_KEY").unwrap());
+        set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
 
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
@@ -56,7 +56,7 @@ impl App {
     }
 
     pub async fn respond(&self, event: Request) -> Result<Response<Body>, Error> {
-        println!("Handling {} request...", event.method());
+        tracing::info!("Handling {} request...", event.method());
         let response = Response::builder();
 
         match *event.method() {
@@ -91,7 +91,7 @@ impl App {
         let mut graphql_request =
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        if let Ok(user) = authenticate_request(&self.db, event).await {
+        if let Some(user) = authenticate_request(&self.db, event).await? {
             graphql_request = graphql_request.data(user);
         };
 

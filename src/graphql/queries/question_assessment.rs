@@ -10,7 +10,7 @@ use crate::graphql::types::{question_assessment::QuestionAssessment, user::User}
 #[derive(Default)]
 pub struct QuestionAssessmentQuery;
 
-#[Object]
+#[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl QuestionAssessmentQuery {
     #[graphql(guard = "AuthGuard")]
     async fn question_assessment(

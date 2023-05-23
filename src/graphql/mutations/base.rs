@@ -4,7 +4,6 @@ use crate::guards::auth::AuthGuard;
 use crate::{error::APIError, graphql::types::user::User, util::stripe::get_stripe_client};
 use anyhow::Result;
 use async_graphql::{Context, Object};
-use sea_orm::DatabaseConnection;
 
 #[derive(Default)]
 pub struct BaseMutation;
@@ -17,7 +16,6 @@ impl BaseMutation {
         ctx: &Context<'_>,
         success_url: String,
     ) -> Result<String, anyhow::Error> {
-        let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = ctx.data_unchecked::<User>();
         let stripe_customer_id = user.stripe_customer_id(ctx).await?;
 

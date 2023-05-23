@@ -1,6 +1,6 @@
 use crate::graphql::types::user::User;
 use crate::schema::users;
-use crate::{auth::Payload, error::APIError};
+use crate::{auth::TokenPayload, error::APIError};
 
 use async_graphql::{Context, Object};
 use chrono::Utc;
@@ -27,38 +27,32 @@ impl UserMutation {
         let user = users::Entity::find()
             .filter(users::Column::Email.contains(&email))
             .one(conn)
-            .await?;
+            .await?
+            .ok_or_else(|| {
+                APIError::new("USER_NOT_FOUND", &format!("User not found: {}", &email))
+            })?;
 
-        match user {
-            Some(user) => {
-                match bcrypt::verify(&password, &user.password) {
-                    Ok(true) => tracing::info!("Login Success: {}", &email),
-                    Ok(false) | Err(_) => {
-                        tracing::error!("Login attempt with password mismatch");
-                        return Err(APIError::new("PASSWORD_MISMATCH", "Password mismatch").into());
-                    }
-                }
-
-                match jsonwebtoken::encode(
-                    &jsonwebtoken::Header::default(),
-                    &Payload { user_id: user.id },
-                    &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
-                ) {
-                    Ok(token) => Ok(token),
-                    Err(_) => {
-                        tracing::error!("Error creating token");
-                        Err(
-                            APIError::new("COULD_NOT_CREATE_TOKEN", "Could not create token")
-                                .into(),
-                        )
-                    }
-                }
-            }
-            None => {
-                tracing::info!("Login Attempt: User not found: {}", email);
-                Err(APIError::new("USER_NOT_FOUND", "User not found").into())
-            }
+        match bcrypt::verify(&password, &user.password) {
+            Ok(true) => tracing::info!("Login Success: {}", &email),
+            Ok(false) => Err(APIError::new(
+                "PASSWORD_MISMATCH",
+                &format!("Password mismatch: {}", &email),
+            ))?,
+            Err(e) => Err(APIError::new(
+                "BCRYPT_ERROR",
+                &format!("Error verifying password: {}", e),
+            ))?,
         }
+
+        Ok(jsonwebtoken::encode(
+            &jsonwebtoken::Header::default(),
+            &TokenPayload {
+                user_id: user.id,
+                created: Utc::now(),
+            },
+            &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
+        )
+        .map_err(|e| APIError::new("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
     }
 
     async fn create_user(

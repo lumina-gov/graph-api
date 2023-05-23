@@ -6,6 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
+    error::APIError,
     graphql::types::{
         question_assessment::{
             QuestionAssessment, QuestionAssessmentActiveModel, QuestionAssessmentColumn,
@@ -25,7 +26,7 @@ pub struct QuestionAssessmentMutation;
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl QuestionAssessmentMutation {
     #[graphql(guard = "AuthGuard")]
-    pub async fn create_assessment(
+    pub async fn question_assessment(
         &self,
         ctx: &Context<'_>,
         course_slug: String,
@@ -91,13 +92,14 @@ Respond in Pure JSON
             assessment: Assessment,
         }
 
-        let partial_assessment: PartialAssessment =
-            serde_json::from_str(&json_string).map_err(|_| {
-                anyhow::anyhow!(
-                    "Failed to serialise AI response, please try again. AI Response {}",
-                    content
-                )
-            })?;
+        let partial_assessment: PartialAssessment = match serde_json::from_str(&json_string) {
+            Ok(partial_assessment) => partial_assessment,
+            Err(err) => Err(APIError::new_with_detail(
+                "FAILED_DESERIALIZATION",
+                "Failed to deserialize AI response. Please try again.",
+                &err.to_string(),
+            ))?,
+        };
 
         let assessment: QuestionAssessmentActiveModel = QuestionAssessment {
             id: Uuid::new_v4(),

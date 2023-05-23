@@ -83,7 +83,6 @@ impl User {
         ctx: &Context<'_>,
         return_url: Option<String>,
     ) -> Result<String, anyhow::Error> {
-        let conn = ctx.data_unchecked::<DatabaseConnection>();
         let stripe_customer_id = self.stripe_customer_id(ctx).await?;
         let client = get_stripe_client();
 
@@ -100,7 +99,6 @@ impl User {
         &self,
         ctx: &Context<'_>,
     ) -> Result<SubscriptionInfo, anyhow::Error> {
-        let conn = ctx.data_unchecked::<DatabaseConnection>();
         let stripe_customer_id = self.stripe_customer_id(ctx).await?;
         let client = get_stripe_client();
 

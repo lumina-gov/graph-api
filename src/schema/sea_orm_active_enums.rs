@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Copy, Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize, Enum,
 )]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "assessment")]
 pub enum Assessment {
     #[sea_orm(string_value = "FAIL")]
