@@ -9,8 +9,9 @@ use crate::{
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, Set,
+    sea_query::{extension::sqlite::SqliteExpr, Expr},
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, Set,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
@@ -58,15 +59,14 @@ impl User {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
+        use crate::schema::applications;
+
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        match crate::schema::applications::Entity::find()
-            .filter(crate::schema::applications::Column::ApplicationType.eq("citizenship"))
-            .filter(Expr::cust_with_expr(
-                "application->>'user_id'",
-                self.id.to_string(),
-            ))
-            .order_by_desc(crate::schema::applications::Column::CreatedAt)
+        match applications::Entity::find()
+            .filter(applications::Column::ApplicationType.eq("citizenship"))
+            .filter(Expr::col(applications::Column::Application).cast_json_field("user_id"))
+            .order_by_desc(applications::Column::CreatedAt)
             .one(conn)
             .await?
         {
