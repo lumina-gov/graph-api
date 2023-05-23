@@ -19,7 +19,7 @@ impl QuestionAssessmentQuery {
         course_slug: String,
         unit_slug: String,
         question_slug: String,
-    ) -> Result<Option<QuestionAssessment>, anyhow::Error> {
+    ) -> async_graphql::Result<Option<QuestionAssessment>> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 

@@ -2,16 +2,15 @@ use std::str::FromStr;
 
 use crate::{
     applications::{CitizenshipApplication, CitizenshipStatus},
-    error::APIError,
+    error::new_err,
     schema::users,
     util::stripe::get_stripe_client,
 };
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sea_orm::{
-    sea_query::{extension::sqlite::SqliteExpr, Expr},
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set,
+    sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
@@ -44,7 +43,7 @@ impl User {
         }
     }
 
-    async fn referral_count(&self, ctx: &Context<'_>) -> Result<u64, anyhow::Error> {
+    async fn referral_count(&self, ctx: &Context<'_>) -> async_graphql::Result<u64> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
         let count = users::Entity::find()
@@ -58,7 +57,7 @@ impl User {
     async fn citizenship_status(
         &self,
         ctx: &Context<'_>,
-    ) -> Result<Option<CitizenshipStatus>, anyhow::Error> {
+    ) -> async_graphql::Result<Option<CitizenshipStatus>> {
         use crate::schema::applications;
 
         let conn = ctx.data_unchecked::<DatabaseConnection>();
@@ -85,7 +84,7 @@ impl User {
         &self,
         ctx: &Context<'_>,
         return_url: Option<String>,
-    ) -> Result<String, anyhow::Error> {
+    ) -> async_graphql::Result<String> {
         let stripe_customer_id = self.stripe_customer_id(ctx).await?;
         let client = get_stripe_client();
 
@@ -101,7 +100,7 @@ impl User {
     async fn stripe_subscription_info(
         &self,
         ctx: &Context<'_>,
-    ) -> Result<SubscriptionInfo, anyhow::Error> {
+    ) -> async_graphql::Result<SubscriptionInfo> {
         let stripe_customer_id = self.stripe_customer_id(ctx).await?;
         let client = get_stripe_client();
 
@@ -126,11 +125,7 @@ impl User {
                     match NaiveDateTime::from_timestamp_millis(subscription.current_period_end) {
                         Some(date) => date,
                         None => {
-                            return Err(APIError::new(
-                                "FAILED_TO_PARSE_DATE",
-                                "Failed to parse date",
-                            )
-                            .into())
+                            return Err(new_err("FAILED_TO_PARSE_DATE", "Failed to parse date"))
                         }
                     };
 
@@ -150,7 +145,7 @@ impl User {
             }),
         }
     }
-    pub async fn stripe_customer_id(&self, ctx: &Context<'_>) -> Result<String, anyhow::Error> {
+    pub async fn stripe_customer_id(&self, ctx: &Context<'_>) -> async_graphql::Result<String> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
         let client = get_stripe_client();

@@ -16,7 +16,7 @@ impl ApplicationMutation {
         &self,
         ctx: &Context<'_>,
         application: Application,
-    ) -> Result<uuid::Uuid, anyhow::Error> {
+    ) -> async_graphql::Result<uuid::Uuid> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
 
         validate_application(&application).await?;

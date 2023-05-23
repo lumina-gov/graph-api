@@ -1,6 +1,7 @@
+use crate::error::new_err_with_detail;
 use crate::graphql::types::user::User;
 use crate::schema::users;
-use crate::{auth::TokenPayload, error::APIError};
+use crate::{auth::TokenPayload, error::new_err};
 
 use async_graphql::{Context, Object};
 use chrono::Utc;
@@ -22,23 +23,21 @@ impl UserMutation {
         ctx: &Context<'_>,
         email: String,
         password: String,
-    ) -> Result<String, anyhow::Error> {
+    ) -> async_graphql::Result<String> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = users::Entity::find()
             .filter(users::Column::Email.contains(&email))
             .one(conn)
             .await?
-            .ok_or_else(|| {
-                APIError::new("USER_NOT_FOUND", &format!("User not found: {}", &email))
-            })?;
+            .ok_or_else(|| new_err("USER_NOT_FOUND", &format!("User not found: {}", &email)))?;
 
         match bcrypt::verify(&password, &user.password) {
             Ok(true) => tracing::info!("Login Success: {}", &email),
-            Ok(false) => Err(APIError::new(
+            Ok(false) => Err(new_err(
                 "PASSWORD_MISMATCH",
                 &format!("Password mismatch: {}", &email),
             ))?,
-            Err(e) => Err(APIError::new(
+            Err(e) => Err(new_err(
                 "BCRYPT_ERROR",
                 &format!("Error verifying password: {}", e),
             ))?,
@@ -52,7 +51,7 @@ impl UserMutation {
             },
             &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
         )
-        .map_err(|e| APIError::new("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
+        .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
     }
 
     async fn create_user(
@@ -66,7 +65,7 @@ impl UserMutation {
         country_code: String,
         phone_number: String,
         referrer: Option<Uuid>,
-    ) -> Result<Uuid, anyhow::Error> {
+    ) -> async_graphql::Result<Uuid> {
         let user = User {
             id: Uuid::new_v4(),
             email,
@@ -99,15 +98,15 @@ impl UserMutation {
                 tracing::info!("User created: {}", &user.email);
                 Ok(model.id)
             }
-            Err(DbErr::RecordNotInserted) => Err(APIError::new(
+            Err(DbErr::RecordNotInserted) => Err(new_err(
                 "USER_ALREADY_EXISTS",
                 &format!("User already exists: {}", &user.email),
-            ))?,
-            Err(e) => Err(APIError::new_with_detail(
+            )),
+            Err(e) => Err(new_err_with_detail(
                 "FAILED_TO_CREATE_USER",
                 &format!("Failed to create user"),
                 &format!("{:?}", e),
-            ))?,
+            )),
         }
     }
 }

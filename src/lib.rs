@@ -91,11 +91,20 @@ impl App {
         let mut graphql_request =
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
-        if let Some(user) = authenticate_request(&self.db, event).await? {
-            graphql_request = graphql_request.data(user);
+        match authenticate_request(&self.db, event).await {
+            Ok(Some(user)) => {
+                graphql_request = graphql_request.data(user);
+            }
+            Ok(None) => {}
+            Err(e) => {
+                return Ok(async_graphql::Response::from_errors(vec![
+                    e.into_server_error(async_graphql::Pos { line: 0, column: 0 })
+                ]))
+            }
         };
+        let res = self.schema.execute(graphql_request).await;
 
-        Ok(self.schema.execute(graphql_request).await)
+        Ok(res)
     }
 
     async fn handle_post(&self, event: Request) -> Result<Response<Body>, Error> {

@@ -6,7 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    error::APIError,
+    error::new_err_with_detail,
     graphql::types::{
         question_assessment::{
             QuestionAssessment, QuestionAssessmentActiveModel, QuestionAssessmentColumn,
@@ -35,7 +35,7 @@ impl QuestionAssessmentMutation {
         question: String,
         answer: String,
         question_context: Option<String>,
-    ) -> Result<QuestionAssessment, anyhow::Error> {
+    ) -> async_graphql::Result<QuestionAssessment> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
@@ -94,7 +94,7 @@ Respond in Pure JSON
 
         let partial_assessment: PartialAssessment = match serde_json::from_str(&json_string) {
             Ok(partial_assessment) => partial_assessment,
-            Err(err) => Err(APIError::new_with_detail(
+            Err(err) => Err(new_err_with_detail(
                 "FAILED_DESERIALIZATION",
                 "Failed to deserialize AI response. Please try again.",
                 &err.to_string(),

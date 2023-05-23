@@ -15,7 +15,7 @@ impl UnitProgressQuery {
         &self,
         ctx: &Context<'_>,
         course_slug: String,
-    ) -> Result<Vec<unit_progress::Model>, anyhow::Error> {
+    ) -> async_graphql::Result<Vec<unit_progress::Model>> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
@@ -30,7 +30,7 @@ impl UnitProgressQuery {
     pub async fn all_course_progress(
         &self,
         ctx: &Context<'_>,
-    ) -> Result<Vec<Vec<unit_progress::Model>>, anyhow::Error> {
+    ) -> async_graphql::Result<Vec<Vec<unit_progress::Model>>> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
@@ -64,7 +64,7 @@ impl UnitProgressQuery {
     pub async fn last_updated_unit(
         &self,
         ctx: &Context<'_>,
-    ) -> Result<Option<unit_progress::Model>, anyhow::Error> {
+    ) -> async_graphql::Result<Option<unit_progress::Model>> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 

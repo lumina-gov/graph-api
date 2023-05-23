@@ -1,4 +1,4 @@
-use crate::{error::APIError, graphql::types::user::User, schema::users};
+use crate::{error::new_err, graphql::types::user::User, schema::users};
 use async_graphql::{Context, Object};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter};
 
@@ -7,7 +7,7 @@ pub struct UserQuery;
 
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserQuery {
-    async fn user_count(&self, ctx: &Context<'_>) -> Result<u64, anyhow::Error> {
+    async fn user_count(&self, ctx: &Context<'_>) -> async_graphql::Result<u64> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
         let data = users::Entity::find().count(conn).await?;
@@ -24,12 +24,12 @@ impl UserQuery {
         ctx: &Context<'_>,
         interval: i32,
         count: i32,
-    ) -> Result<Vec<u64>, anyhow::Error> {
+    ) -> async_graphql::Result<Vec<u64>> {
         if count > 36 {
-            return Err(APIError::new("BAD_REQUEST", "Count must be below 36").into());
+            return Err(new_err("BAD_REQUEST", "Count must be below 36").into());
         }
         if interval > 6 {
-            return Err(APIError::new("BAD_REQUEST", "Interval must be below 6").into());
+            return Err(new_err("BAD_REQUEST", "Interval must be below 6").into());
         }
 
         let conn = ctx.data_unchecked::<DatabaseConnection>();

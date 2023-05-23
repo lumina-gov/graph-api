@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
+use crate::error::new_err;
 use crate::guards::auth::AuthGuard;
-use crate::{error::APIError, graphql::types::user::User, util::stripe::get_stripe_client};
-use anyhow::Result;
+use crate::{graphql::types::user::User, util::stripe::get_stripe_client};
 use async_graphql::{Context, Object};
 
 #[derive(Default)]
@@ -15,7 +15,7 @@ impl BaseMutation {
         &self,
         ctx: &Context<'_>,
         success_url: String,
-    ) -> Result<String, anyhow::Error> {
+    ) -> async_graphql::Result<String> {
         let user = ctx.data_unchecked::<User>();
         let stripe_customer_id = user.stripe_customer_id(ctx).await?;
 
@@ -31,11 +31,10 @@ impl BaseMutation {
 
         let session = stripe::CheckoutSession::create(&client, create_session).await?;
         match session.url {
-            None => Err(APIError::new(
+            None => Err(new_err(
                 "COULD_NOT_CREATE_CHECKOUT_SESSION",
                 "Could not create checkout session",
-            )
-            .into()),
+            )),
             Some(url) => Ok(url),
         }
     }

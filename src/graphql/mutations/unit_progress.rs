@@ -25,7 +25,7 @@ impl UnitProgressMutation {
         unit_slug: String,
         course_slug: String,
         status: UnitStatus,
-    ) -> Result<UnitProgress, anyhow::Error> {
+    ) -> async_graphql::Result<UnitProgress> {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 

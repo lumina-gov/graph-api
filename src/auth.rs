@@ -1,4 +1,4 @@
-use crate::error::APIError;
+use crate::error::new_err;
 use crate::graphql::types::user::User;
 use crate::schema::users;
 use chrono::DateTime;
@@ -21,7 +21,7 @@ pub struct TokenPayload {
 pub async fn authenticate_token(
     db: &DatabaseConnection,
     token: &str,
-) -> Result<User, anyhow::Error> {
+) -> async_graphql::Result<User> {
     let mut validation = Validation::new(Algorithm::HS256);
     validation.validate_exp = false;
     validation.set_required_spec_claims::<&str>(&[]);
@@ -31,13 +31,13 @@ pub async fn authenticate_token(
         &DecodingKey::from_secret(std::env::var("JWT_SECRET")?.as_bytes()),
         &validation,
     )
-    .map_err(|_| APIError::new("INVALID_TOKEN", "Invalid auth token"))?
+    .map_err(|_| new_err("INVALID_TOKEN", "Invalid auth token"))?
     .claims;
 
     let user = users::Entity::find_by_id(payload.user_id)
         .one(db)
         .await?
-        .ok_or_else(|| APIError::new("INVALID_TOKEN", "User does not exist"))?;
+        .ok_or_else(|| new_err("INVALID_TOKEN", "User does not exist"))?;
 
     Ok(user)
 }
@@ -45,14 +45,14 @@ pub async fn authenticate_token(
 pub async fn authenticate_request(
     db: &DatabaseConnection,
     event: Request,
-) -> Result<Option<User>, anyhow::Error> {
+) -> async_graphql::Result<Option<User>> {
     let header = event.headers().get("Authorization");
 
     if let Some(header) = header.and_then(|h| h.to_str().ok()) {
         if let Some(token) = header.strip_prefix("Bearer ") {
             Ok(Some(authenticate_token(db, token).await?))
         } else {
-            Err(APIError::new("INVALID_TOKEN", "Auth header should use Bearer").into())
+            Err(new_err("INVALID_TOKEN", "Auth header should use Bearer").into())
         }
     } else {
         Ok(None)
