@@ -32,3 +32,4 @@ sea-orm = { version = "^0", features= [
     "with-json",
     "with-chrono",
 ]}
+sendgrid={version="0.19",features=["async","rustls"]}

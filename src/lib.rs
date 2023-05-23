@@ -19,6 +19,7 @@ use util::variables::init_non_secret_variables;
 pub struct App {
     schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
     db: DatabaseConnection,
+    sendgrid_client: sendgrid::SGClient,
 }
 
 impl App {
@@ -40,6 +41,11 @@ impl App {
 
         set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
 
+        let sendgrid_key: String =
+            dotenv::var("SENDGRID_KEY").expect("SENDGRID_KEY not set in .env");
+
+        let sendgrid_client = sendgrid::SGClient::new(sendgrid_key);
+
         let postgrest_url: String =
             dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 
@@ -52,6 +58,7 @@ impl App {
                 EmptySubscription,
             )),
             db,
+            sendgrid_client,
         })
     }
 
