@@ -1,5 +1,5 @@
-use testcontainers::{core::WaitFor, Image};
 use std::collections::HashMap;
+use testcontainers::{core::WaitFor, Image};
 
 const NAME: &str = "postgres";
 const TAG: &str = "11-alpine";

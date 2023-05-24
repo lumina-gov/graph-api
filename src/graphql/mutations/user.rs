@@ -26,6 +26,7 @@ impl UserMutation {
     ) -> async_graphql::Result<String> {
         let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
+        let jwt = ctx.data_unchecked::<crate::JwtSecret>();
         let user = users::Entity::find()
             .filter(users::Column::Email.contains(&email))
             .one(conn)
@@ -50,7 +51,7 @@ impl UserMutation {
                 user_id: user.id,
                 created: Utc::now(),
             },
-            &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
+            &EncodingKey::from_secret(&jwt.secret),
         )
         .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
     }

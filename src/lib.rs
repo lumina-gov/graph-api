@@ -18,13 +18,18 @@ use sea_orm::{Database, DatabaseConnection};
 use util::variables::init_non_secret_variables;
 
 #[derive(Clone)]
+pub struct JwtSecret {
+    secret: Vec<u8>,
+}
+#[derive(Clone)]
 pub struct App {
     schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
     db: DatabaseConnection,
+    jwt_secret: JwtSecret,
 }
 
 impl App {
-    pub async fn new(db_url: &str, open_ai_key: &str) -> Result<Self, Error> {
+    pub async fn new(db_url: &str, open_ai_key: &str, jwt_secret: &str) -> Result<Self, Error> {
         // setup tracking for logs
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
@@ -48,6 +53,9 @@ impl App {
                 EmptySubscription,
             )),
             db,
+            jwt_secret: JwtSecret {
+                secret: jwt_secret.as_bytes().to_vec(),
+            },
         })
     }
 
@@ -84,10 +92,11 @@ impl App {
         event: Request,
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
-        let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
+        let mut graphql_request = serde_json::from_str::<async_graphql::Request>(body)?
+            .data(self.db.clone())
+            .data(self.jwt_secret.clone());
 
-        match authenticate_request(&self.db, event).await {
+        match authenticate_request(&self.db, &self.jwt_secret, event).await {
             Ok(Some(user)) => {
                 graphql_request = graphql_request.data(user);
             }

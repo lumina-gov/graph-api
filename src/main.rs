@@ -8,7 +8,8 @@ async fn main() -> Result<(), Error> {
     dotenv::dotenv().ok();
     let open_ai_key = dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env");
     let postgress_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
-    let app = App::new(&postgress_url, &open_ai_key).await?;
+    let jwt_secret = dotenv::var("JWT_SECRET").expect("JWT_SECRET is not set in .env");
+    let app = App::new(&postgress_url, &open_ai_key, &jwt_secret).await?;
 
     run(app).await
 }

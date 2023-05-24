@@ -4,20 +4,24 @@ mod shared;
 
 #[tokio::test]
 async fn can_query_citizenship_status() -> Result<(), anyhow::Error> {
-    let email = shared::create_user().await?;
-    let token = shared::login_specific(&email).await?;
+    let docker_client = testcontainers::clients::Cli::docker();
+    let shared_app = shared::SharedApp::init(&docker_client).await;
 
-    let response = shared::query(
-        r#"
+    let email = shared_app.create_user().await?;
+    let token = shared_app.login_specific(&email).await?;
+
+    let response = shared_app
+        .query(
+            r#"
         query {
             me {
                 citizenship_status
             }
         }
     "#,
-        &token,
-    )
-    .await?;
+            &token,
+        )
+        .await?;
 
     assert_eq!(response["errors"], json!(null));
     assert_eq!(response["data"]["me"]["citizenship_status"], json!(null));
@@ -27,11 +31,15 @@ async fn can_query_citizenship_status() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn can_create_ctiizenship_application() -> Result<(), anyhow::Error> {
-    let email = shared::create_user().await?;
-    let token = shared::login_specific(&email).await?;
+    let docker_client = testcontainers::clients::Cli::docker();
+    let shared_app = shared::SharedApp::init(&docker_client).await;
 
-    let response = shared::query(
-        r#"
+    let email = shared_app.create_user().await?;
+    let token = shared_app.login_specific(&email).await?;
+
+    let response = shared_app
+        .query(
+            r#"
         mutation {
             create_citizenship_application (
                 date_of_birth: 1,
@@ -47,9 +55,9 @@ async fn can_create_ctiizenship_application() -> Result<(), anyhow::Error> {
             )
         }
     "#,
-        &token,
-    )
-    .await?;
+            &token,
+        )
+        .await?;
 
     assert_eq!(response["errors"], json!(null));
 
