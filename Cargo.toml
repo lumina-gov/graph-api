@@ -32,3 +32,6 @@ sea-orm = { version = "^0", features= [
     "with-json",
     "with-chrono",
 ]}
+
+[dev-dependencies]
+testcontainers = "0.14"

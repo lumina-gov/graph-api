@@ -24,7 +24,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new() -> Result<Self, Error> {
+    pub async fn new(db_url: &str, open_ai_key: &str) -> Result<Self, Error> {
         // setup tracking for logs
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
@@ -35,17 +35,11 @@ impl App {
             .without_time()
             .try_init()
             .ok();
-
-        // There is not a .env file in prod, so we ignore the error.
-        dotenv::dotenv().ok();
         init_non_secret_variables();
 
-        set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
+        set_key(open_ai_key.to_owned());
 
-        let postgrest_url: String =
-            dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
-
-        let db = Database::connect(postgrest_url).await?;
+        let db = Database::connect(db_url).await?;
 
         Ok(Self {
             schema: Arc::new(Schema::new(

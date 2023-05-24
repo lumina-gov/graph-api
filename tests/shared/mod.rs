@@ -1,9 +1,17 @@
+mod custom_postgres;
 use lambda_http::Body;
 use serde_json::{json, Value};
 use uuid::Uuid;
-
+use crate::shared::custom_postgres::Postgres;
 pub async fn query(query: &str, token: &Option<String>) -> Result<Value, anyhow::Error> {
-    let app = graph_api::App::new()
+    let docker_client = testcontainers::clients::Cli::docker();
+    let postgres = Postgres::default();
+    let running_postgress = docker_client.run(postgres);
+    let postgress_url = format!(
+        "postgresql://test:test@localhost:{}/postgres",
+        running_postgress.get_host_port_ipv4(5432)
+    );
+    let app = graph_api::App::new(&postgress_url, "")
         .await
         .map_err(|e| anyhow::anyhow!(e))?;
 
