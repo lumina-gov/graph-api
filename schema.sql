@@ -4,11 +4,6 @@ CREATE TYPE "assessment" AS ENUM ('UNKNOWN', 'FAIL', 'SOFT_PASS', 'PASS');
 
 CREATE TYPE "unit_status" AS ENUM ('Completed', 'InProgress', 'NotStarted');
 
-CREATE TABLE "public"."__diesel_schema_migrations" (
-    "version" character varying(50) NOT NULL,
-    "run_on" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY ("version")
-);
 
 CREATE TABLE "public"."applications" (
     "id" uuid NOT NULL,

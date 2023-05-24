@@ -10,7 +10,7 @@ use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, Set,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, Unchanged,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
@@ -171,6 +171,7 @@ impl User {
 
                 // update user with stripe_customer_id
                 let user = users::ActiveModel {
+                    id: Unchanged(self.id),
                     stripe_customer_id: Set(Some(customer.id.to_string())),
                     ..Default::default()
                 };
