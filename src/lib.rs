@@ -1,5 +1,6 @@
 pub(crate) mod applications;
 pub(crate) mod auth;
+pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
@@ -15,6 +16,7 @@ use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use openai::set_key;
 use sea_orm::{Database, DatabaseConnection};
 use util::variables::init_non_secret_variables;
+
 #[derive(Clone)]
 pub struct App {
     schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
