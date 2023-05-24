@@ -95,8 +95,9 @@ impl App {
         event: Request,
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
-        let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
+        let mut graphql_request = serde_json::from_str::<async_graphql::Request>(body)?
+            .data(self.db.clone())
+            .data(self.sendgrid_client.clone());
 
         match authenticate_request(&self.db, event).await {
             Ok(Some(user)) => {

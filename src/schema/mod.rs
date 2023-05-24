@@ -3,6 +3,7 @@
 pub mod applications;
 pub mod oauth_apps;
 pub mod oauth_grants;
+pub mod password_reset_tokens;
 pub mod question_assessments;
 pub mod sea_orm_active_enums;
 pub mod unit_progress;
