@@ -24,7 +24,7 @@ impl UserMutation {
         email: String,
         password: String,
     ) -> async_graphql::Result<String> {
-        let email = email.to_lowercase();
+        let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = users::Entity::find()
             .filter(users::Column::Email.contains(&email))
@@ -67,7 +67,7 @@ impl UserMutation {
         phone_number: String,
         referrer: Option<Uuid>,
     ) -> async_graphql::Result<Uuid> {
-        let email = email.to_lowercase();
+        let email = email.trim().to_lowercase();
         let user = User {
             id: Uuid::new_v4(),
             email,
