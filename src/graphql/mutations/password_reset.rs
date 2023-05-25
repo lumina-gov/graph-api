@@ -31,7 +31,7 @@ impl PasswordResetMutation {
             .ok_or_else(|| new_err("USER_NOT_FOUND", &format!("User not found: {}", &email)))?;
 
         let mut new_reset_token = password_reset_tokens::ActiveModel::default();
-        new_reset_token.id = ActiveValue::NotSet;
+        new_reset_token.id = ActiveValue::Set(uuid::Uuid::new_v4());
         new_reset_token.user_id = ActiveValue::Set(user.id);
 
         let token = match password_reset_tokens::Entity::insert(new_reset_token)

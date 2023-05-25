@@ -80,6 +80,6 @@ ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_referrer_fkey" FOREIGN K
 CREATE UNIQUE INDEX index_users_email ON public.users USING btree (email);
 
 CREATE TABLE "public"."password_reset_tokens" (
-    "id" uuid NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    "id" uuid NOT NULL PRIMARY KEY,
     "user_id" uuid NOT NULL REFERENCES "public"."users"(id)
 );
