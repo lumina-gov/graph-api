@@ -14,6 +14,7 @@ use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use sea_orm::{Database, DatabaseConnection};
+use sendgrid::SGClient;
 use util::variables::SECRET_VARIABLES;
 
 #[derive(Clone)]
@@ -35,7 +36,6 @@ impl App {
             .without_time()
             .try_init()
             .ok();
-
         Ok(Self {
             schema: Arc::new(Schema::new(
                 Query::default(),
@@ -50,7 +50,7 @@ impl App {
                     .expect("DATABASE_URL not set"),
             })
             .await?,
-            sendgrid_client,
+            sendgrid_client: SGClient::new(&SECRET_VARIABLES.sendgrid_api_key),
         })
     }
 
