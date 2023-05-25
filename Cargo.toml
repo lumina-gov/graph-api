@@ -32,6 +32,8 @@ sea-orm = { version = "^0", features= [
     "with-json",
     "with-chrono",
 ]}
+lazy_static = "1.4.0"
+
 
 [dev-dependencies]
 testcontainers = "0.14"

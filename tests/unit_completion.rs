@@ -8,7 +8,7 @@ pub async fn set_unit_progress(
     unit_slug: &str,
     status: &str,
     token: &Option<String>,
-    shared_app: &SharedApp<'_>,
+    shared_app: &SharedApp,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
@@ -31,7 +31,7 @@ pub async fn set_unit_progress(
 
 async fn last_updated_unit(
     token: &Option<String>,
-    shared_app: &SharedApp<'_>,
+    shared_app: &SharedApp,
 ) -> Result<serde_json::Value, anyhow::Error> {
     shared_app
         .query(
@@ -54,8 +54,7 @@ async fn last_updated_unit(
 
 #[tokio::test]
 async fn mark_unit_as_completed() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;
@@ -84,8 +83,7 @@ async fn mark_unit_as_completed() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn can_get_course_progress() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;
@@ -119,8 +117,7 @@ async fn can_get_course_progress() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn can_get_all_course_progress() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;
@@ -188,8 +185,7 @@ async fn can_get_all_course_progress() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn can_get_last_updated_unit() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;
@@ -226,8 +222,7 @@ async fn can_get_last_updated_unit() -> Result<(), anyhow::Error> {
 //testing if all course progress query sorts by updated_at
 #[tokio::test]
 async fn all_course_progress_sorts_by_updated_at() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;

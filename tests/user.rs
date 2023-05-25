@@ -4,8 +4,7 @@ mod shared;
 
 #[tokio::test]
 async fn can_get_me() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&email).await?;

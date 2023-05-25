@@ -3,8 +3,7 @@ use serde_json::json;
 
 #[tokio::test]
 async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let user_email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&user_email).await?;
@@ -40,8 +39,7 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn fails() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let res = shared_app
         .query(

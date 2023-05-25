@@ -1,7 +1,7 @@
 use crate::error::new_err;
 use crate::graphql::types::user::User;
 use crate::schema::users;
-use crate::JwtSecret;
+use crate::util::variables::SECRET_VARIABLES;
 use chrono::DateTime;
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
@@ -21,7 +21,6 @@ pub struct TokenPayload {
 
 pub async fn authenticate_token(
     db: &DatabaseConnection,
-    jwt_sceret: &JwtSecret,
     token: &str,
 ) -> async_graphql::Result<User> {
     let mut validation = Validation::new(Algorithm::HS256);
@@ -30,7 +29,7 @@ pub async fn authenticate_token(
 
     let payload = jsonwebtoken::decode::<TokenPayload>(
         token,
-        &DecodingKey::from_secret(&jwt_sceret.secret),
+        &DecodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         &validation,
     )
     .map_err(|_| new_err("INVALID_TOKEN", "Invalid auth token"))?
@@ -46,14 +45,13 @@ pub async fn authenticate_token(
 
 pub async fn authenticate_request(
     db: &DatabaseConnection,
-    jwt_sceret: &JwtSecret,
     event: Request,
 ) -> async_graphql::Result<Option<User>> {
     let header = event.headers().get("Authorization");
 
     if let Some(header) = header.and_then(|h| h.to_str().ok()) {
         if let Some(token) = header.strip_prefix("Bearer ") {
-            Ok(Some(authenticate_token(db, jwt_sceret, token).await?))
+            Ok(Some(authenticate_token(db, token).await?))
         } else {
             Err(new_err("INVALID_TOKEN", "Auth header should use Bearer").into())
         }

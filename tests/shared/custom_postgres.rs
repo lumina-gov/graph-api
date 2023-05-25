@@ -44,4 +44,8 @@ impl Image for Postgres {
     fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
         Box::new(self.env_vars.iter())
     }
+
+    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
+        Box::new(std::iter::empty())
+    }
 }

@@ -5,8 +5,7 @@ mod shared;
 
 #[tokio::test]
 async fn can_do_question_assessment() -> Result<(), anyhow::Error> {
-    let docker_client = testcontainers::clients::Cli::docker();
-    let shared_app = shared::SharedApp::init(&docker_client).await;
+    let shared_app = shared::SharedApp::init().await;
 
     let email = shared_app.create_user().await?;
     let token = shared_app.login_specific(&email).await?;
@@ -52,7 +51,7 @@ async fn create_question_assessment(
     answer: &str,
     context: &str,
     token: &Option<String>,
-    shared_app: &SharedApp<'_>,
+    shared_app: &SharedApp,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"
@@ -78,7 +77,7 @@ async fn get_question_assessment(
     unit_slug: &str,
     question_slug: &str,
     token: &Option<String>,
-    shared_app: &SharedApp<'_>,
+    shared_app: &SharedApp,
 ) -> Result<serde_json::Value, anyhow::Error> {
     let query = format!(
         r#"

@@ -4,32 +4,40 @@ use std::{fs::read_to_string, sync::Arc};
 use crate::shared::custom_postgres::Postgres;
 use graph_api::App;
 use lambda_http::Body;
+use lazy_static::lazy_static;
 use sea_orm::{ConnectionTrait, Database};
 use serde_json::{json, Value};
+use testcontainers::clients::Cli;
 use testcontainers::Container;
-use uuid::Uuid;
-#[allow(dead_code)]
-pub struct SharedApp<'a> {
-    app: App,
-    postgres_container: Container<'a, Postgres>,
-    postgres_url: String,
+
+lazy_static! {
+    static ref DOCKER_CLIENT: Cli = Cli::docker();
 }
 
-impl<'a> SharedApp<'a> {
-    pub async fn init(docker_client: &'a testcontainers::clients::Cli) -> SharedApp<'a> {
-        let arc_docker_client = Arc::new(docker_client);
+#[allow(dead_code)]
+pub struct SharedApp {
+    app: App,
+    postgres_container: Container<'static, Postgres>,
+}
+
+impl SharedApp {
+    pub async fn init() -> SharedApp {
         let postgres = Postgres::default();
-        let postgres_container: Container<'a, Postgres> = arc_docker_client.run(postgres);
+        let postgres_container: Container<'static, Postgres> = DOCKER_CLIENT.run(postgres);
         let postgres_url = format!(
             "postgresql://test:test@localhost:{}/postgres",
             postgres_container.get_host_port_ipv4(5432)
         );
+
+        std::env::set_var("TEST_POSTGRES_URL", &postgres_url);
+
         {
             let db = Database::connect(&postgres_url).await.unwrap();
             let schema = read_to_string("schema.sql").unwrap();
             db.execute_unprepared(&schema).await.unwrap();
         }
-        let app = graph_api::App::new(&postgres_url, &dotenv::var("OPENAI_KEY").unwrap(), "secret")
+
+        let app = graph_api::App::new(Some(postgres_url))
             .await
             .map_err(|e| anyhow::anyhow!(e))
             .unwrap();
@@ -37,9 +45,9 @@ impl<'a> SharedApp<'a> {
         SharedApp {
             app,
             postgres_container,
-            postgres_url,
         }
     }
+
     pub async fn query(&self, query: &str, token: &Option<String>) -> Result<Value, anyhow::Error> {
         let req_body = json!({
             "query": query,
@@ -100,7 +108,7 @@ impl<'a> SharedApp<'a> {
 
     #[allow(dead_code)]
     pub async fn create_user(&self) -> Result<String, anyhow::Error> {
-        let user_email = "cat@example.com".to_owned();
+        let user_email: String = "cat@example.com".to_owned();
         let res = self
             .query(
                 &format!(

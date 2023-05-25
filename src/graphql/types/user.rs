@@ -4,7 +4,7 @@ use crate::{
     applications::{CitizenshipApplication, CitizenshipStatus},
     error::new_err,
     schema::users,
-    util::stripe::get_stripe_client,
+    util::{stripe::get_stripe_client, variables::SECRET_VARIABLES},
 };
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -108,9 +108,9 @@ impl User {
             &client,
             &stripe::ListSubscriptions {
                 customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
-                price: Some(PriceId::from_str(&dotenv::var(
-                    "LIGHT_UNIVERSITY_PRICE_ID",
-                )?)?),
+                price: Some(PriceId::from_str(
+                    &SECRET_VARIABLES.light_university_product_id,
+                )?),
                 ..Default::default()
             },
         )
