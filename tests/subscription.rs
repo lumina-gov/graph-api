@@ -3,11 +3,14 @@ use serde_json::json;
 
 #[tokio::test]
 async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
-    let user_email = shared::create_user().await?;
-    let token = shared::login_specific(&user_email).await?;
+    let shared_app = shared::SharedApp::init().await;
 
-    let res = shared::query(
-        r#"
+    let user_email = shared_app.create_user().await?;
+    let token = shared_app.login_specific(&user_email).await?;
+
+    let res = shared_app
+        .query(
+            r#"
         query {
             me {
                 stripe_subscription_info {
@@ -17,9 +20,9 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
             }
         }
     "#,
-        &token,
-    )
-    .await?;
+            &token,
+        )
+        .await?;
 
     assert_eq!(res["errors"], json!(null));
     assert_eq!(
@@ -36,17 +39,20 @@ async fn can_check_for_active_subscription() -> Result<(), anyhow::Error> {
 
 #[tokio::test]
 async fn fails() -> Result<(), anyhow::Error> {
-    let res = shared::query(
-        r#"
+    let shared_app = shared::SharedApp::init().await;
+
+    let res = shared_app
+        .query(
+            r#"
         query {
             all_course_progress {
                 course_slug
             }
         }
     "#,
-        &None,
-    )
-    .await?;
+            &None,
+        )
+        .await?;
 
     assert_eq!(res["errors"][0]["extensions"]["code"], "UNAUTHENTICATED",);
 

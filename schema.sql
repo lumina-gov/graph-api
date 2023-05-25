@@ -4,6 +4,21 @@ CREATE TYPE "assessment" AS ENUM ('UNKNOWN', 'FAIL', 'SOFT_PASS', 'PASS');
 
 CREATE TYPE "unit_status" AS ENUM ('Completed', 'InProgress', 'NotStarted');
 
+CREATE TABLE "public"."users" (
+    "id" uuid NOT NULL,
+    "email" character varying NOT NULL,
+    "joined" timestamp with time zone NOT NULL DEFAULT now(),
+    "password" character varying NOT NULL,
+    "first_name" character varying NOT NULL,
+    "last_name" character varying NOT NULL,
+    "calling_code" character varying NOT NULL,
+    "country_code" character varying NOT NULL,
+    "phone_number" character varying NOT NULL,
+    "role" character varying,
+    "referrer" uuid,
+    "stripe_customer_id" character varying,
+    PRIMARY KEY ("id")
+);
 
 CREATE TABLE "public"."applications" (
     "id" uuid NOT NULL,
@@ -59,22 +74,6 @@ CREATE TABLE "public"."unit_progress" (
 ALTER TABLE ONLY "public"."unit_progress" ADD CONSTRAINT "unit_progress_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 ALTER TABLE "public"."unit_progress" ADD CONSTRAINT "unique_user_unit_course" UNIQUE (user_id, unit_slug, course_slug);
-
-CREATE TABLE "public"."users" (
-    "id" uuid NOT NULL,
-    "email" character varying NOT NULL,
-    "joined" timestamp with time zone NOT NULL DEFAULT now(),
-    "password" character varying NOT NULL,
-    "first_name" character varying NOT NULL,
-    "last_name" character varying NOT NULL,
-    "calling_code" character varying NOT NULL,
-    "country_code" character varying NOT NULL,
-    "phone_number" character varying NOT NULL,
-    "role" character varying,
-    "referrer" uuid,
-    "stripe_customer_id" character varying,
-    PRIMARY KEY ("id")
-);
 
 ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_referrer_fkey" FOREIGN KEY ("referrer") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 

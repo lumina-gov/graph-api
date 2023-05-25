@@ -12,9 +12,8 @@ use async_graphql::{EmptySubscription, Schema};
 use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
-use openai::set_key;
 use sea_orm::{Database, DatabaseConnection};
-use util::variables::init_non_secret_variables;
+use util::variables::SECRET_VARIABLES;
 
 #[derive(Clone)]
 pub struct App {
@@ -23,7 +22,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new() -> Result<Self, Error> {
+    pub async fn new(test_database_url: Option<String>) -> Result<Self, Error> {
         // setup tracking for logs
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
@@ -35,24 +34,20 @@ impl App {
             .try_init()
             .ok();
 
-        // There is not a .env file in prod, so we ignore the error.
-        dotenv::dotenv().ok();
-        init_non_secret_variables();
-
-        set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
-
-        let postgrest_url: String =
-            dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
-
-        let db = Database::connect(postgrest_url).await?;
-
         Ok(Self {
             schema: Arc::new(Schema::new(
                 Query::default(),
                 Mutation::default(),
                 EmptySubscription,
             )),
-            db,
+            db: Database::connect(match test_database_url {
+                Some(url) => url,
+                None => SECRET_VARIABLES
+                    .database_url
+                    .clone()
+                    .expect("DATABASE_URL not set"),
+            })
+            .await?,
         })
     }
 
