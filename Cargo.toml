@@ -33,7 +33,7 @@ sea-orm = { version = "^0", features= [
     "with-chrono",
 ]}
 lazy_static = "1.4.0"
-sendgrid={version="0.19",features=["async","rustls"]}
+sendgrid={version="0.19",features=["async","rustls"],default-features = false}
 
 [dev-dependencies]
 testcontainers = "0.14"
