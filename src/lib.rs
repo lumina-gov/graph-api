@@ -1,6 +1,5 @@
 pub(crate) mod applications;
 pub(crate) mod auth;
-pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
