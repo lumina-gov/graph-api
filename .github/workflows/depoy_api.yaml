@@ -53,6 +53,7 @@ jobs:
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --env-var OPENAI_KEY=$OPENAI_KEY \
             --env-var PRODUCTION=$PRODUCTION \
+            --env-var SENDGRID_KEY=$SENDGRID_KEY \
             --binary-name graph-api \
             graph-api-${GITHUB_REF##*/}
         env:
@@ -60,4 +61,5 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
