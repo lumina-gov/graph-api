@@ -22,17 +22,17 @@ lazy_static! {
 
         SecretVariables {
             jwt_secret: dotenv::var("JWT_SECRET")
-                .expect("JWT_SECRET is not set in .env")
+                .expect("JWT_SECRET is not set in env variables")
                 .into_bytes(),
             sendgrid_api_key: dotenv::var("SENDGRID_KEY")
-                .expect("SENDGRID_API_KEY is not set in .env"),
+                .expect("SENDGRID_KEY is not set in env variables"),
             light_university_product_id: match in_prod {
                 true => "price_1MnbOyJRb0ozzDydaCZxbuvY",
                 false => "price_1Mc2OQJRb0ozzDydL7R86kGy",
             }
             .into(),
             stripe_secret_key: dotenv::var("STRIPE_SECRET_KEY")
-                .expect("STRIPE_SECRET_KEY is not set in .env"),
+                .expect("STRIPE_SECRET_KEY is not set in env variables"),
             database_url: dotenv::var("DATABASE_URL").ok(),
         }
     };
