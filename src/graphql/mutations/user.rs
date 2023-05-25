@@ -1,6 +1,7 @@
 use crate::error::new_err_with_detail;
 use crate::graphql::types::user::User;
 use crate::schema::users;
+use crate::util::variables::SECRET_VARIABLES;
 use crate::{auth::TokenPayload, error::new_err};
 
 use async_graphql::{Context, Object};
@@ -50,7 +51,7 @@ impl UserMutation {
                 user_id: user.id,
                 created: Utc::now(),
             },
-            &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
+            &EncodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         )
         .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
     }

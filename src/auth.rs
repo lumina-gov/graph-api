@@ -1,6 +1,7 @@
 use crate::error::new_err;
 use crate::graphql::types::user::User;
 use crate::schema::users;
+use crate::util::variables::SECRET_VARIABLES;
 use chrono::DateTime;
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
@@ -28,7 +29,7 @@ pub async fn authenticate_token(
 
     let payload = jsonwebtoken::decode::<TokenPayload>(
         token,
-        &DecodingKey::from_secret(std::env::var("JWT_SECRET")?.as_bytes()),
+        &DecodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         &validation,
     )
     .map_err(|_| new_err("INVALID_TOKEN", "Invalid auth token"))?
