@@ -4,7 +4,7 @@ pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
-pub(crate) mod schema;
+pub mod schema;
 pub(crate) mod util;
 
 use std::{future::Future, pin::Pin, sync::Arc};

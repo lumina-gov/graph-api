@@ -48,11 +48,16 @@ impl PasswordResetMutation {
 
             Ok(token) => token.id,
         };
-        let reset_url = RESET_URL_BASE.to_owned() + &token.as_u128().to_string();
+        let reset_url = RESET_URL_BASE.to_owned() + &token.simple().to_string();
         let reset_text = format!("go to {} to reset your password", reset_url);
         let reset_password_mail = sendgrid::Mail::new()
+            .add_from("no-reply@lumina.earth")
             .add_text(&reset_text)
-            .add_subject("Lumina: Your password reset link!");
+            .add_subject("Lumina: Your password reset link!")
+            .add_to(sendgrid::Destination {
+                address: &email,
+                name: &user.first_name,
+            });
         match s_g_client.send(reset_password_mail).await {
             Ok(_) => return Ok("sent email"),
             Err(error) => {
@@ -84,7 +89,7 @@ impl PasswordResetMutation {
             .exec(db)
             .await;
 
-        let user = users::Entity::find_by_id(user_token.id)
+        let user = users::Entity::find_by_id(user_token.user_id)
             .one(db)
             .await?
             .ok_or_else(|| {
