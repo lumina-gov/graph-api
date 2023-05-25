@@ -1,3 +1,4 @@
+use crate::auth::Scope;
 use crate::error::new_err_with_detail;
 use crate::graphql::types::user::User;
 use crate::schema::users;
@@ -49,6 +50,7 @@ impl UserMutation {
             &TokenPayload {
                 user_id: user.id,
                 created: Utc::now(),
+                scopes: vec![Scope("*".into())],
             },
             &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
         )

@@ -1,5 +1,6 @@
 use async_graphql::MergedObject;
 
+mod auth_apps;
 mod base;
 mod question_assessment;
 mod unit_progress;
@@ -11,4 +12,5 @@ pub struct Query(
     user::UserQuery,
     question_assessment::QuestionAssessmentQuery,
     unit_progress::UnitProgressQuery,
+    auth_apps::AuthAppsQuery,
 );

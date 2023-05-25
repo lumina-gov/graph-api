@@ -94,9 +94,7 @@ impl App {
             serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
 
         match authenticate_request(&self.db, event).await {
-            Ok(Some(user)) => {
-                graphql_request = graphql_request.data(user);
-            }
+            Ok(Some((user, scopes))) => graphql_request = graphql_request.data(user).data(scopes),
             Ok(None) => {}
             Err(e) => {
                 return Ok(async_graphql::Response::from_errors(vec![

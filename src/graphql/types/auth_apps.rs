@@ -1,44 +1,13 @@
-use std::collections::HashMap;
-
+use async_graphql::SimpleObject;
 use chrono::{DateTime, Utc};
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
 
-struct AuthApp {
-    name: String,
-    description: String,
-    created: DateTime<Utc>,
-    redirect_hostnames: Vec<String>,
-    scopes: Vec<String>,
-    official: bool,
-}
-
-fn scopes() -> Value {
-    json!({
-        "profile": {
-            "description": "View and edit your profile",
-            "subscopes": {
-                "read": {
-                    "description": "View your profile",
-                    "subscopes": {}
-                },
-                "edit": {
-                    "description": "Edit your profile",
-                    "subscopes": {}
-                }
-            }
-        },
-        "education": {
-            "description": "View and edit your educational data",
-            "subscopes": {
-                "read": {
-                    "description": "View your educational data",
-                    "subscopes": {}
-                },
-                "edit": {
-                    "description": "Edit your education data",
-                    "subscopes": {}
-                }
-            }
-        }
-    })
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, SimpleObject)]
+pub struct AuthApp {
+    pub name: String,
+    pub description: String,
+    pub created: DateTime<Utc>,
+    pub redirect_hostnames: Vec<String>,
+    pub scopes: Vec<String>,
+    pub official: bool,
 }
