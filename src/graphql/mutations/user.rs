@@ -1,6 +1,7 @@
 use crate::error::new_err_with_detail;
 use crate::graphql::types::user::User;
 use crate::schema::users;
+use crate::util::variables::SECRET_VARIABLES;
 use crate::{auth::TokenPayload, error::new_err};
 
 use async_graphql::{Context, Object};
@@ -24,6 +25,7 @@ impl UserMutation {
         email: String,
         password: String,
     ) -> async_graphql::Result<String> {
+        let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = users::Entity::find()
             .filter(users::Column::Email.contains(&email))
@@ -49,7 +51,7 @@ impl UserMutation {
                 user_id: user.id,
                 created: Utc::now(),
             },
-            &EncodingKey::from_secret(dotenv::var("JWT_SECRET")?.as_bytes()),
+            &EncodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         )
         .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
     }
@@ -66,6 +68,7 @@ impl UserMutation {
         phone_number: String,
         referrer: Option<Uuid>,
     ) -> async_graphql::Result<Uuid> {
+        let email = email.trim().to_lowercase();
         let user = User {
             id: Uuid::new_v4(),
             email,

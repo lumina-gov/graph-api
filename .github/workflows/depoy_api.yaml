@@ -4,7 +4,6 @@ on: push
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # environment: production
     # choose production if branch is main
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     steps:
@@ -17,6 +16,7 @@ jobs:
             toolchain: nightly
             override: true
             components: rustfmt, clippy
+            # target: aarch64-unknown-linux-gnu
       - name: Install Zig toolchain
         uses: korandoru/setup-zig@v1
         with:
@@ -53,6 +53,7 @@ jobs:
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --env-var OPENAI_KEY=$OPENAI_KEY \
             --env-var PRODUCTION=$PRODUCTION \
+            --env-var SENDGRID_KEY=$SENDGRID_KEY \
             --binary-name graph-api \
             graph-api-${GITHUB_REF##*/}
         env:
@@ -60,4 +61,5 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}

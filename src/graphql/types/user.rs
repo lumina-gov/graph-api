@@ -4,13 +4,13 @@ use crate::{
     applications::{CitizenshipApplication, CitizenshipStatus},
     error::new_err,
     schema::users,
-    util::stripe::get_stripe_client,
+    util::{stripe::get_stripe_client, variables::SECRET_VARIABLES},
 };
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, Set,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, Unchanged,
 };
 use serde::{Deserialize, Serialize};
 use stripe::{CreateBillingPortalSession, PriceId};
@@ -108,9 +108,9 @@ impl User {
             &client,
             &stripe::ListSubscriptions {
                 customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
-                price: Some(PriceId::from_str(&dotenv::var(
-                    "LIGHT_UNIVERSITY_PRICE_ID",
-                )?)?),
+                price: Some(PriceId::from_str(
+                    &SECRET_VARIABLES.light_university_product_id,
+                )?),
                 ..Default::default()
             },
         )
@@ -171,6 +171,7 @@ impl User {
 
                 // update user with stripe_customer_id
                 let user = users::ActiveModel {
+                    id: Unchanged(self.id),
                     stripe_customer_id: Set(Some(customer.id.to_string())),
                     ..Default::default()
                 };
