@@ -62,5 +62,5 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
-          NAME: graph-api-${{ github.ref == 'refs/heads/main' && 'main' || 'staging'}}
+          NAME: ${{ github.ref == 'refs/heads/main' && 'main' || 'staging'}}
           SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
