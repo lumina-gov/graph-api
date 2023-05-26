@@ -48,6 +48,13 @@ impl SharedApp {
         }
     }
 
+    pub fn get_db_url(&self) -> String {
+        format!(
+            "postgresql://test:test@localhost:{}/postgres",
+            self.postgres_container.get_host_port_ipv4(5432)
+        )
+    }
+
     pub async fn query(&self, query: &str, token: &Option<String>) -> Result<Value, anyhow::Error> {
         let req_body = json!({
             "query": query,
@@ -108,7 +115,7 @@ impl SharedApp {
 
     #[allow(dead_code)]
     pub async fn create_user(&self) -> Result<String, anyhow::Error> {
-        let user_email: String = "cat@example.com".to_owned();
+        let user_email: String = "gov@lumina.earth".to_owned();
         let res = self
             .query(
                 &format!(

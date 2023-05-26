@@ -78,3 +78,8 @@ ALTER TABLE "public"."unit_progress" ADD CONSTRAINT "unique_user_unit_course" UN
 ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_referrer_fkey" FOREIGN KEY ("referrer") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 CREATE UNIQUE INDEX index_users_email ON public.users USING btree (email);
+
+CREATE TABLE "public"."password_reset_tokens" (
+    "id" uuid NOT NULL PRIMARY KEY,
+    "user_id" uuid NOT NULL REFERENCES "public"."users"(id)
+);

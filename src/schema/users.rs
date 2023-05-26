@@ -38,6 +38,8 @@ pub enum Relation {
     QuestionAssessments,
     #[sea_orm(has_many = "super::unit_progress::Entity")]
     UnitProgress,
+    #[sea_orm(has_many = "super::password_reset_tokens::Entity")]
+    PasswordResetTokens,
 }
 
 impl Related<super::question_assessments::Entity> for Entity {
@@ -52,4 +54,9 @@ impl Related<super::unit_progress::Entity> for Entity {
     }
 }
 
+impl Related<super::password_reset_tokens::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PasswordResetTokens.def()
+    }
+}
 impl ActiveModelBehavior for ActiveModel {}

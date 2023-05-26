@@ -4,7 +4,7 @@ pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
-pub(crate) mod schema;
+pub mod schema;
 pub(crate) mod util;
 
 use std::{future::Future, pin::Pin, sync::Arc};
@@ -14,12 +14,14 @@ use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use sea_orm::{Database, DatabaseConnection};
+use sendgrid::SGClient;
 use util::variables::SECRET_VARIABLES;
 
 #[derive(Clone)]
 pub struct App {
     schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
     db: DatabaseConnection,
+    sendgrid_client: sendgrid::SGClient,
 }
 
 impl App {
@@ -34,7 +36,6 @@ impl App {
             .without_time()
             .try_init()
             .ok();
-
         Ok(Self {
             schema: Arc::new(Schema::new(
                 Query::default(),
@@ -49,6 +50,7 @@ impl App {
                     .expect("DATABASE_URL not set"),
             })
             .await?,
+            sendgrid_client: SGClient::new(&SECRET_VARIABLES.sendgrid_api_key),
         })
     }
 
@@ -85,8 +87,9 @@ impl App {
         event: Request,
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
-        let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
+        let mut graphql_request = serde_json::from_str::<async_graphql::Request>(body)?
+            .data(self.db.clone())
+            .data(self.sendgrid_client.clone());
 
         match authenticate_request(&self.db, event).await {
             Ok(Some(user)) => {
