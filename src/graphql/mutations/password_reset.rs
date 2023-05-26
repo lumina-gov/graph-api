@@ -31,11 +31,12 @@ impl PasswordResetMutation {
             .await?
             .ok_or_else(|| new_err("USER_NOT_FOUND", &format!("User not found: {}", &email)))?;
 
-        let mut new_reset_token = password_reset_tokens::ActiveModel::default();
-        new_reset_token.id = ActiveValue::Set(uuid::Uuid::new_v4());
-        new_reset_token.user_id = ActiveValue::Set(user.id);
+        let new_reset_token = password_reset_tokens::Model {
+            id: uuid::Uuid::new_v4(),
+            user_id: user.id,
+        };
 
-        let token = match password_reset_tokens::Entity::insert(new_reset_token)
+        let token = match password_reset_tokens::Entity::insert(new_reset_token.into_active_model())
             .exec_with_returning(db)
             .await
         {
