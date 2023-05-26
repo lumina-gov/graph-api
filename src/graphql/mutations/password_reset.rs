@@ -7,6 +7,7 @@ use tracing::{event, Level};
 
 use crate::{
     error::new_err,
+    graphql::types::Void,
     schema::{self, password_reset_tokens, users},
 };
 
@@ -20,7 +21,7 @@ impl PasswordResetMutation {
         &self,
         ctx: &Context<'_>,
         email: String,
-    ) -> async_graphql::Result<&str> {
+    ) -> async_graphql::Result<Void> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
         let s_g_client = ctx.data_unchecked::<SGClient>();
 
@@ -59,7 +60,7 @@ impl PasswordResetMutation {
                 name: &user.first_name,
             });
         match s_g_client.send(reset_password_mail).await {
-            Ok(_) => return Ok("sent email"),
+            Ok(_) => return Ok(Void),
             Err(error) => {
                 event!(Level::ERROR, "{}", error);
                 return Err(new_err("EMAIL_SEND_ERROR", "unable to send email"));
@@ -72,7 +73,7 @@ impl PasswordResetMutation {
         ctx: &Context<'_>,
         token_id: uuid::Uuid,
         new_password: String,
-    ) -> async_graphql::Result<&str> {
+    ) -> async_graphql::Result<Void> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
         if new_password.len() < 8 {
             return Err(new_err(
@@ -103,7 +104,7 @@ impl PasswordResetMutation {
         active_user.password = ActiveValue::Set(hashed_password);
 
         match users::Entity::update(active_user).exec(db).await {
-            Ok(_) => Ok("password has been reset"),
+            Ok(_) => Ok(Void),
             Err(error) => {
                 event!(Level::ERROR, "{}", error);
                 return Err(new_err(
