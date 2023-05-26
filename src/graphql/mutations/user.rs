@@ -81,6 +81,9 @@ impl UserMutation {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = ctx.data_unchecked::<User>();
 
+        // todo: ensure that the scopes the authenticated user/token is requesting
+        // are a subset of the scopes they have access to
+
         get_auth_token(user, scopes).await
     }
 
