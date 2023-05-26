@@ -8,7 +8,7 @@ async fn password_actually_got_reset() -> Result<(), anyhow::Error> {
 
     let email = shared_app.create_user().await?;
 
-    let _ = shared_app
+    let response = shared_app
         .query(
             &format!(
                 "
