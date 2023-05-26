@@ -77,7 +77,7 @@ impl PasswordResetMutation {
         if new_password.len() < 8 {
             return Err(new_err(
                 "PASSWORD_TOO_SHORT",
-                "your password needs to be atleast 8 characters long!!!",
+                "Your password needs to be at least 8 characters long",
             ));
         }
         let user_token = schema::password_reset_tokens::Entity::find_by_id(token_id)
