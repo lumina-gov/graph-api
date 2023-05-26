@@ -35,6 +35,7 @@ sea-orm = { version = "^0", features= [
 lazy_static = "1.4.0"
 rand = "0.8.5"
 base64 = "0.21.0"
+sendgrid={version="0.19",features=["async","rustls"],default-features = false}
 
 [dev-dependencies]
 testcontainers = "0.14"
