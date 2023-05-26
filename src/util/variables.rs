@@ -51,10 +51,6 @@ fn generate_app_secret() {
     let mut rng = rand::thread_rng();
     let mut bytes = [0u8; 80];
     rng.fill_bytes(&mut bytes);
-    let secret = base64::engine::GeneralPurpose::new(
-        &base64::alphabet::URL_SAFE,
-        GeneralPurposeConfig::default(),
-    )
-    .encode(&bytes);
+    let secret = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&bytes);
     println!("LUMINA_APP_SECRET={}", secret);
 }
