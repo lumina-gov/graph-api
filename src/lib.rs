@@ -13,7 +13,7 @@ use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use sea_orm::{Database, DatabaseConnection};
-use util::variables::SECRET_VARIABLES;
+pub use util::variables::SECRET_VARIABLES;
 
 #[derive(Clone)]
 pub struct App {

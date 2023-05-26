@@ -2,7 +2,7 @@ mod custom_postgres;
 use std::{fs::read_to_string, sync::Arc};
 
 use crate::shared::custom_postgres::Postgres;
-use graph_api::App;
+use graph_api::{App, SECRET_VARIABLES};
 use lambda_http::Body;
 use lazy_static::lazy_static;
 use sea_orm::{ConnectionTrait, Database};
@@ -100,6 +100,7 @@ impl SharedApp {
                     email: \"{}\",
                     password: \"password\",
                     scopes: [{}]
+                    app_secret: \"{}\"
                 )
             }}",
                     email,
@@ -107,7 +108,8 @@ impl SharedApp {
                         .iter()
                         .map(|s| format!("\"{}\"", s))
                         .collect::<Vec<String>>()
-                        .join(",")
+                        .join(","),
+                    &SECRET_VARIABLES.app_secret
                 ),
                 &None,
             )

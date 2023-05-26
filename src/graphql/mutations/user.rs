@@ -28,6 +28,10 @@ impl UserMutation {
         scopes: Vec<String>,
         app_secret: String,
     ) -> async_graphql::Result<String> {
+        if app_secret != SECRET_VARIABLES.app_secret {
+            return Err(new_err("INVALID_APP_SECRET", "The app secret is invalid"));
+        }
+
         let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = users::Entity::find()
