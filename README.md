@@ -28,9 +28,11 @@ SENDGRID_KEY=
 ### Local Development
 
 1. Clone the repository to your computer
-2. Ensure you have the rust toolchain installed
-3. Run `cargo lambda watch`
-4. You can now use the endpoint `http://localhost:9000/lambda-url/graph-api/`
+2. Install Rust toolchain
+3. Install Docker Engine
+4. Start docker
+5. Write a test for new feature or development
+6. Run the test
 
 ### Deployment
 

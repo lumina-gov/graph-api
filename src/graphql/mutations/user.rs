@@ -1,8 +1,13 @@
+use crate::auth::Scope;
 use crate::error::new_err_with_detail;
 use crate::graphql::types::user::User;
 use crate::schema::users;
 use crate::util::variables::SECRET_VARIABLES;
-use crate::{auth::TokenPayload, error::new_err};
+use crate::{
+    auth::TokenPayload,
+    error::new_err,
+    guards::{auth::AuthGuard, scope::ScopeGuard},
+};
 
 use async_graphql::{Context, Object};
 use chrono::Utc;
@@ -15,6 +20,19 @@ use uuid::Uuid;
 #[derive(Default)]
 pub struct UserMutation;
 
+async fn get_auth_token(user: &User, scopes: Vec<String>) -> async_graphql::Result<String> {
+    Ok(jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &TokenPayload {
+            user_id: user.id,
+            created: Utc::now(),
+            scopes: scopes.into_iter().map(|s| Scope(s)).collect(),
+        },
+        &EncodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
+    )
+    .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
+}
+
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl UserMutation {
     /// Returns an authentication token if the
@@ -24,7 +42,13 @@ impl UserMutation {
         ctx: &Context<'_>,
         email: String,
         password: String,
+        scopes: Vec<String>,
+        app_secret: String,
     ) -> async_graphql::Result<String> {
+        if app_secret != SECRET_VARIABLES.app_secret {
+            return Err(new_err("INVALID_APP_SECRET", "The app secret is invalid"));
+        }
+
         let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = users::Entity::find()
@@ -45,15 +69,22 @@ impl UserMutation {
             ))?,
         }
 
-        Ok(jsonwebtoken::encode(
-            &jsonwebtoken::Header::default(),
-            &TokenPayload {
-                user_id: user.id,
-                created: Utc::now(),
-            },
-            &EncodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
-        )
-        .map_err(|e| new_err("COULD_NOT_CREATE_TOKEN", &format!("{}", e)))?)
+        get_auth_token(&user, scopes).await
+    }
+
+    #[graphql(guard = "ScopeGuard::new(\"account:issue_token\").and(AuthGuard)")]
+    async fn issue_token(
+        &self,
+        ctx: &Context<'_>,
+        scopes: Vec<String>,
+    ) -> async_graphql::Result<String> {
+        let conn = ctx.data_unchecked::<DatabaseConnection>();
+        let user = ctx.data_unchecked::<User>();
+
+        // todo: ensure that the scopes the authenticated user/token is requesting
+        // are a subset of the scopes they have access to
+
+        get_auth_token(user, scopes).await
     }
 
     async fn create_user(

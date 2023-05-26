@@ -13,16 +13,20 @@ use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct Scope(pub String);
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TokenPayload {
     pub user_id: Uuid,
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub created: DateTime<Utc>,
+    pub scopes: Vec<Scope>,
 }
 
 pub async fn authenticate_token(
     db: &DatabaseConnection,
     token: &str,
-) -> async_graphql::Result<User> {
+) -> async_graphql::Result<(User, Vec<Scope>)> {
     let mut validation = Validation::new(Algorithm::HS256);
     validation.validate_exp = false;
     validation.set_required_spec_claims::<&str>(&[]);
@@ -32,7 +36,7 @@ pub async fn authenticate_token(
         &DecodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         &validation,
     )
-    .map_err(|_| new_err("INVALID_TOKEN", "Invalid auth token"))?
+    .map_err(|_| new_err("INVALID_TOKEN", "Invalid auth token. Please reauthenticate"))?
     .claims;
 
     let user = users::Entity::find_by_id(payload.user_id)
@@ -40,13 +44,13 @@ pub async fn authenticate_token(
         .await?
         .ok_or_else(|| new_err("INVALID_TOKEN", "User does not exist"))?;
 
-    Ok(user)
+    Ok((user, payload.scopes))
 }
 
 pub async fn authenticate_request(
     db: &DatabaseConnection,
     event: Request,
-) -> async_graphql::Result<Option<User>> {
+) -> async_graphql::Result<Option<(User, Vec<Scope>)>> {
     let header = event.headers().get("Authorization");
 
     if let Some(header) = header.and_then(|h| h.to_str().ok()) {

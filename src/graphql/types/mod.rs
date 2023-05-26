@@ -1,6 +1,7 @@
 use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, Value};
 
 pub mod application;
+pub mod auth_apps;
 pub mod course;
 pub mod organisation;
 pub mod question_assessment;

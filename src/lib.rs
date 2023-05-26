@@ -1,6 +1,5 @@
 pub(crate) mod applications;
 pub(crate) mod auth;
-pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
@@ -14,8 +13,8 @@ use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
 use sea_orm::{Database, DatabaseConnection};
+pub use util::variables::SECRET_VARIABLES;
 use sendgrid::SGClient;
-use util::variables::SECRET_VARIABLES;
 
 #[derive(Clone)]
 pub struct App {
@@ -92,9 +91,7 @@ impl App {
             .data(self.sendgrid_client.clone());
 
         match authenticate_request(&self.db, event).await {
-            Ok(Some(user)) => {
-                graphql_request = graphql_request.data(user);
-            }
+            Ok(Some((user, scopes))) => graphql_request = graphql_request.data(user).data(scopes),
             Ok(None) => {}
             Err(e) => {
                 return Ok(async_graphql::Response::from_errors(vec![

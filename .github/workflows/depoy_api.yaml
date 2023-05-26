@@ -54,12 +54,15 @@ jobs:
             --env-var OPENAI_KEY=$OPENAI_KEY \
             --env-var PRODUCTION=$PRODUCTION \
             --env-var SENDGRID_KEY=$SENDGRID_KEY \
+            --env-var LUMINA_APP_SECRET=$LUMINA_APP_SECRET \
             --binary-name graph-api \
-            graph-api-${GITHUB_REF##*/}
+            graph-api-$NAME
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
+          LUMINA_APP_SECRET: ${{ secrets.LUMINA_APP_SECRET }}
+          NAME: ${{ github.ref == 'refs/heads/main' && 'main' || 'staging'}}
