@@ -13,7 +13,7 @@ lazy_static! {
             "lumina-university",
             AuthApp {
                 name: "Lumina University".to_string(),
-                scopes: vec!["lumina-university".to_string()],
+                scopes: vec!["profile:read".into(), "billing".into(), "education".into()],
                 redirect_hostnames: vec!["luminauniversity.earth".into(), "localhost".into()],
                 created: chrono::Utc
                     .with_ymd_and_hms(2023, 5, 25, 0, 0, 0)

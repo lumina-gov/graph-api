@@ -19,7 +19,7 @@ impl Guard for ScopeGuard {
     async fn check(&self, ctx: &Context<'_>) -> Result<()> {
         let scopes = ctx.data_unchecked::<Vec<Scope>>();
 
-        match has_scopes(scopes, "user:read") {
+        match has_scopes(scopes, &self.required_scope) {
             Ok(true) => Ok(()),
             Ok(false) => Err(new_err(
                 "UNAUTHORIZED",

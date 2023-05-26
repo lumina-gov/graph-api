@@ -84,16 +84,30 @@ impl SharedApp {
     }
 
     pub async fn login_specific(&self, email: &str) -> Result<Option<String>, anyhow::Error> {
+        self.login_specific_with_scopes(email, vec!["*"]).await
+    }
+
+    pub async fn login_specific_with_scopes(
+        &self,
+        email: &str,
+        scopes: Vec<&str>,
+    ) -> Result<Option<String>, anyhow::Error> {
         let res = self
             .query(
                 &format!(
                     "mutation {{
                 auth_token(
                     email: \"{}\",
-                    password: \"password\"
+                    password: \"password\",
+                    scopes: [{}]
                 )
             }}",
-                    email
+                    email,
+                    scopes
+                        .iter()
+                        .map(|s| format!("\"{}\"", s))
+                        .collect::<Vec<String>>()
+                        .join(",")
                 ),
                 &None,
             )

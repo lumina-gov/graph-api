@@ -25,6 +25,7 @@ impl UserMutation {
         ctx: &Context<'_>,
         email: String,
         password: String,
+        scopes: Option<Vec<String>>,
     ) -> async_graphql::Result<String> {
         let email = email.trim().to_lowercase();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
@@ -51,7 +52,11 @@ impl UserMutation {
             &TokenPayload {
                 user_id: user.id,
                 created: Utc::now(),
-                scopes: vec![Scope("*".into())],
+                scopes: scopes
+                    .unwrap_or_else(|| vec!["*".into()])
+                    .into_iter()
+                    .map(|s| Scope(s))
+                    .collect(),
             },
             &EncodingKey::from_secret(&SECRET_VARIABLES.jwt_secret),
         )
