@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::graphql::types::auth_apps::AuthApp;
-use async_graphql::{Context, Object};
+use async_graphql::Object;
 use chrono::TimeZone;
 use lazy_static::lazy_static;
 
@@ -33,11 +33,7 @@ pub struct AuthAppsQuery;
 
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl AuthAppsQuery {
-    async fn auth_app(
-        &self,
-        ctx: &Context<'_>,
-        slug: String,
-    ) -> async_graphql::Result<Option<&'static AuthApp>> {
+    async fn auth_app(&self, slug: String) -> async_graphql::Result<Option<&'static AuthApp>> {
         return Ok(APPS.get(slug.as_str()));
     }
 }
