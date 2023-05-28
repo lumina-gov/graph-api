@@ -1,6 +1,21 @@
 use crate::{error::new_err, graphql::types::user::User, schema::users};
 use async_graphql::{Context, Object};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter};
+use num_traits::cast::ToPrimitive;
+use sea_orm::{
+    prelude::BigDecimal,
+    sea_query::{Func, PostgresQueryBuilder, Query},
+    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+};
+use sea_orm::{Iden, Statement};
+use std::fmt::Write;
+use tracing::{event, Level};
+struct UserCountFunction;
+
+impl Iden for UserCountFunction {
+    fn unquoted(&self, s: &mut dyn Write) {
+        write!(s, "calculate_user_count").unwrap();
+    }
+}
 
 #[derive(Default)]
 pub struct UserQuery;
@@ -10,9 +25,24 @@ impl UserQuery {
     async fn user_count(&self, ctx: &Context<'_>) -> async_graphql::Result<u64> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        let data = users::Entity::find().count(conn).await?;
-
-        Ok(data)
+        let data = conn
+            .query_one(Statement::from_string(
+                sea_orm::DbBackend::Postgres,
+                Query::select()
+                    .expr(Func::cust(UserCountFunction))
+                    .build(PostgresQueryBuilder)
+                    .0,
+            ))
+            .await?
+            .unwrap();
+        let number: Result<BigDecimal, sea_orm::DbErr> = data.try_get_by("calculate_user_count");
+        match number {
+            Err(db_error) => {
+                event!(Level::ERROR, "{}", db_error);
+                return Err(new_err("USER_COUNT_ERROR", "unable to count users"));
+            }
+            Ok(num) => Ok(num.to_u64().unwrap_or(0)),
+        }
     }
 
     // Get the number of users grouped by their creation date, for a specified interval

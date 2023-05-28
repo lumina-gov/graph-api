@@ -1,4 +1,4 @@
-CREATE EXTENSION "uuid-ossp";
+CREATE EXTENSION  "uuid-ossp";
 
 CREATE TYPE "assessment" AS ENUM ('PASS','SOFT_PASS','FAIL','UNKNOWN');
 

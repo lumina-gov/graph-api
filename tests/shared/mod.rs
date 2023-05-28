@@ -35,6 +35,8 @@ impl SharedApp {
             let db = Database::connect(&postgres_url).await.unwrap();
             let schema = read_to_string("schema.sql").unwrap();
             db.execute_unprepared(&schema).await.unwrap();
+            let functions = read_to_string("./functions/functions.sql").unwrap();
+            db.execute_unprepared(&functions).await.unwrap();
         }
 
         let app = graph_api::App::new(Some(postgres_url))
