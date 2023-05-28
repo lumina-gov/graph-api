@@ -33,7 +33,7 @@ jobs:
           curl -sSf https://atlasgo.sh | sh
       - name: Run database migration
         run: |
-         atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
+          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
