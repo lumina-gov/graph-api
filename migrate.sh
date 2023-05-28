@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install atlas via >>
-# curl -sSf https://atlasgo.sh | s
+# curl -sSf https://atlasgo.sh | sh
 
 set -o allexport; source .env; set +o allexport
 
