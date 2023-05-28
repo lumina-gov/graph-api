@@ -2,7 +2,7 @@ CREATE EXTENSION "uuid-ossp";
 
 CREATE TYPE "assessment" AS ENUM ('PASS','SOFT_PASS','FAIL','UNKNOWN');
 
-CREATE TYPE "unit_status" AS ENUM ('Completed', 'InProgress', 'NotStarted');
+CREATE TYPE "unit_status" AS ENUM ('NotStarted','InProgress','Completed' );
 
 CREATE TABLE "public"."users" (
     "id" uuid NOT NULL,
