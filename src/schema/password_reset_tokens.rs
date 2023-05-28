@@ -13,6 +13,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Uuid,
     pub user_id: Uuid,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

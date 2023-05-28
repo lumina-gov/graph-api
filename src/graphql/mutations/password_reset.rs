@@ -3,6 +3,7 @@ use std::str::FromStr;
 use lazy_static::lazy_static;
 
 use async_graphql::{Context, Object};
+use chrono::{Duration, Utc};
 use sea_orm::{
     ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
 };
@@ -41,6 +42,7 @@ impl PasswordResetMutation {
         let new_reset_token = password_reset_tokens::Model {
             id: uuid::Uuid::new_v4(),
             user_id: user.id,
+            expires_at: (Utc::now() + Duration::days(5)),
         };
 
         let token = match password_reset_tokens::Entity::insert(new_reset_token.into_active_model())
@@ -97,6 +99,20 @@ impl PasswordResetMutation {
             .one(db)
             .await?
             .ok_or_else(|| new_err("TOKEN_NOT_FOUND", "token doesn't exist"))?;
+        if user_token.expires_at <= Utc::now() {
+            event!(
+                Level::INFO,
+                "ivalid token was accessed: {:#?} deleting...",
+                user_token
+            );
+            let _ = schema::password_reset_tokens::Entity::delete_by_id(user_token.id)
+                .exec(db)
+                .await;
+            return Err(new_err(
+                "TOKEN_EXPIRED",
+                "token is expired, please request a new one.",
+            ));
+        }
 
         let _ = schema::password_reset_tokens::Entity::delete_by_id(user_token.id)
             .exec(db)
