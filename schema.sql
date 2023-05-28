@@ -81,5 +81,6 @@ CREATE UNIQUE INDEX index_users_email ON public.users USING btree (email);
 
 CREATE TABLE "public"."password_reset_tokens" (
     "id" uuid NOT NULL PRIMARY KEY,
-    "user_id" uuid NOT NULL REFERENCES "public"."users"(id)
+    "user_id" uuid NOT NULL REFERENCES "public"."users"(id),
+    "expires_at" timestamp with time zone NOT NULL
 );

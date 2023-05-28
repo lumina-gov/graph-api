@@ -1,4 +1,5 @@
 use async_graphql::{Context, Object};
+use chrono::{Duration, Utc};
 use sea_orm::{
     ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
 };
@@ -34,6 +35,7 @@ impl PasswordResetMutation {
         let new_reset_token = password_reset_tokens::Model {
             id: uuid::Uuid::new_v4(),
             user_id: user.id,
+            expires_at: (Utc::now() + Duration::days(5)),
         };
 
         let token = match password_reset_tokens::Entity::insert(new_reset_token.into_active_model())
@@ -83,6 +85,7 @@ impl PasswordResetMutation {
             ));
         }
         let user_token = schema::password_reset_tokens::Entity::find_by_id(token_id)
+            .filter(password_reset_tokens::Column::ExpiresAt.gt(Utc::now()))
             .one(db)
             .await?
             .ok_or_else(|| new_err("TOKEN_NOT_FOUND", "token doesn't exist"))?;
