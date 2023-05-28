@@ -85,10 +85,23 @@ impl PasswordResetMutation {
             ));
         }
         let user_token = schema::password_reset_tokens::Entity::find_by_id(token_id)
-            .filter(password_reset_tokens::Column::ExpiresAt.gt(Utc::now()))
             .one(db)
             .await?
             .ok_or_else(|| new_err("TOKEN_NOT_FOUND", "token doesn't exist"))?;
+        if user_token.expires_at <= Utc::now() {
+            event!(
+                Level::INFO,
+                "ivalid token was accessed: {:#?} deleting...",
+                user_token
+            );
+            let _ = schema::password_reset_tokens::Entity::delete_by_id(user_token.id)
+                .exec(db)
+                .await;
+            return Err(new_err(
+                "TOKEN_EXPIRED",
+                "token is expired, please request a new one.",
+            ));
+        }
 
         let _ = schema::password_reset_tokens::Entity::delete_by_id(user_token.id)
             .exec(db)

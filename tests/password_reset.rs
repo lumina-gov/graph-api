@@ -102,10 +102,7 @@ async fn password_does_not_reset_stale_token() -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    assert_eq!(
-        response["errors"][0]["extensions"]["code"],
-        "TOKEN_NOT_FOUND"
-    );
+    assert_eq!(response["errors"][0]["extensions"]["code"], "TOKEN_EXPIRED");
 
     Ok(())
 }
