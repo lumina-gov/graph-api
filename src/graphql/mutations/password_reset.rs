@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use lazy_static::lazy_static;
+
 use async_graphql::{Context, Object};
 use chrono::{Duration, Utc};
 use sea_orm::{
@@ -12,9 +16,12 @@ use crate::{
     schema::{self, password_reset_tokens, users},
 };
 
+lazy_static! {
+    static ref RESET_URL_BASE: url::Url = url::Url::from_str("https://lumina.earth/reset").unwrap();
+}
 #[derive(Default)]
 pub struct PasswordResetMutation;
-const RESET_URL_BASE: &str = "https://lumina.earth/reset?token=";
+
 #[Object(rename_fields = "snake_case", rename_args = "snake_case")]
 impl PasswordResetMutation {
     #[graphql()]
@@ -52,8 +59,12 @@ impl PasswordResetMutation {
 
             Ok(token) => token.id,
         };
-        let reset_url = RESET_URL_BASE.to_owned() + &token.simple().to_string();
-        let reset_text = format!("go to {} to reset your password", reset_url);
+        let mut reset_url = RESET_URL_BASE.to_owned();
+        reset_url
+            .query_pairs_mut()
+            .append_pair("token", &token.as_simple().to_string())
+            .append_pair("email", &email);
+        let reset_text = format!("go to {} to reset your password", reset_url.to_string());
         let reset_password_mail = sendgrid::Mail::new()
             .add_from("no-reply@lumina.earth")
             .add_text(&reset_text)

@@ -28,8 +28,12 @@ jobs:
           version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
+      - name: Install atlas
+        run: |
+          curl -sSf https://atlasgo.sh | sh 
       - name: Run database migration
-        run: ./migrate.sh
+        run: |
+         atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
