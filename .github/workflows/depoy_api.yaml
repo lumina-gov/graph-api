@@ -30,7 +30,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Install atlas
         run: |
-          curl -sSf https://atlasgo.sh | sh 
+          curl -sSf https://atlasgo.sh | sh
       - name: Run database migration
         run: |
          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
@@ -44,7 +44,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-2
+          aws-region: ap-southeast-1
         # we might want to zip here instead of deploying as a binary
       - name: lambda-version
         run: cargo lambda --version
