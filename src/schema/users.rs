@@ -4,6 +4,8 @@ use async_graphql::SimpleObject;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::guards::scope::ScopeGuard;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject, Deserialize, Serialize)]
 #[sea_orm(table_name = "users")]
 #[graphql(
@@ -15,16 +17,24 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:email\")")]
     pub email: String,
     #[serde(with = "chrono::serde::ts_milliseconds")]
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:joined\")")]
     pub joined: chrono::DateTime<chrono::Utc>,
     #[graphql(skip)]
     pub password: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:name\")")]
     pub first_name: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:name\")")]
     pub last_name: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:phone_number\")")]
     pub calling_code: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:phone_number\")")]
     pub country_code: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:phone_number\")")]
     pub phone_number: String,
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:roles\")")]
     pub role: Option<String>,
     #[graphql(skip)]
     pub referrer: Option<Uuid>,
@@ -38,6 +48,8 @@ pub enum Relation {
     QuestionAssessments,
     #[sea_orm(has_many = "super::unit_progress::Entity")]
     UnitProgress,
+    #[sea_orm(has_many = "super::password_reset_tokens::Entity")]
+    PasswordResetTokens,
 }
 
 impl Related<super::question_assessments::Entity> for Entity {
@@ -52,4 +64,9 @@ impl Related<super::unit_progress::Entity> for Entity {
     }
 }
 
+impl Related<super::password_reset_tokens::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PasswordResetTokens.def()
+    }
+}
 impl ActiveModelBehavior for ActiveModel {}

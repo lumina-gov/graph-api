@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::error::new_err;
 use crate::guards::auth::AuthGuard;
+use crate::util::variables::SECRET_VARIABLES;
 use crate::{graphql::types::user::User, util::stripe::get_stripe_client};
 use async_graphql::{Context, Object};
 
@@ -24,7 +25,7 @@ impl BaseMutation {
         create_session.customer = Some(stripe::CustomerId::from_str(&stripe_customer_id)?);
         create_session.mode = Some(stripe::CheckoutSessionMode::Subscription);
         create_session.line_items = Some(vec![stripe::CreateCheckoutSessionLineItems {
-            price: Some(String::from(&dotenv::var("LIGHT_UNIVERSITY_PRICE_ID")?)),
+            price: Some(String::from(&SECRET_VARIABLES.light_university_product_id)),
             quantity: Some(1),
             ..Default::default()
         }]);

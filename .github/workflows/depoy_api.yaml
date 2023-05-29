@@ -28,8 +28,12 @@ jobs:
           version: "0.16"
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
+      - name: Install atlas
+        run: |
+          curl -sSf https://atlasgo.sh | sh
       - name: Run database migration
-        run: ./migrate.sh
+        run: |
+          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
@@ -40,7 +44,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-2
+          aws-region: ap-southeast-1
         # we might want to zip here instead of deploying as a binary
       - name: lambda-version
         run: cargo lambda --version
@@ -53,11 +57,16 @@ jobs:
             --env-var STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY \
             --env-var OPENAI_KEY=$OPENAI_KEY \
             --env-var PRODUCTION=$PRODUCTION \
+            --env-var SENDGRID_KEY=$SENDGRID_KEY \
+            --env-var LUMINA_APP_SECRET=$LUMINA_APP_SECRET \
             --binary-name graph-api \
-            graph-api-${GITHUB_REF##*/}
+            graph-api-$NAME
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
+          LUMINA_APP_SECRET: ${{ secrets.LUMINA_APP_SECRET }}
+          NAME: ${{ github.ref == 'refs/heads/main' && 'main' || 'staging'}}

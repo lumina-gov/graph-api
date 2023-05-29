@@ -1,10 +1,9 @@
 pub(crate) mod applications;
 pub(crate) mod auth;
-pub(crate) mod auth_apps;
 pub(crate) mod error;
 pub(crate) mod graphql;
 pub(crate) mod guards;
-pub(crate) mod schema;
+pub mod schema;
 pub(crate) mod util;
 
 use std::{future::Future, pin::Pin, sync::Arc};
@@ -13,18 +12,19 @@ use async_graphql::{EmptySubscription, Schema};
 use auth::authenticate_request;
 use graphql::{mutations::Mutation, queries::Query};
 use lambda_http::{http::Method, Body, Error, Request, Response, Service};
-use openai::set_key;
 use sea_orm::{Database, DatabaseConnection};
-use util::variables::init_non_secret_variables;
+pub use util::variables::SECRET_VARIABLES;
+use sendgrid::SGClient;
 
 #[derive(Clone)]
 pub struct App {
     schema: Arc<Schema<Query, Mutation, EmptySubscription>>,
     db: DatabaseConnection,
+    sendgrid_client: sendgrid::SGClient,
 }
 
 impl App {
-    pub async fn new() -> Result<Self, Error> {
+    pub async fn new(test_database_url: Option<String>) -> Result<Self, Error> {
         // setup tracking for logs
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
@@ -35,25 +35,21 @@ impl App {
             .without_time()
             .try_init()
             .ok();
-
-        // There is not a .env file in prod, so we ignore the error.
-        dotenv::dotenv().ok();
-        init_non_secret_variables();
-
-        set_key(dotenv::var("OPENAI_KEY").expect("OPENAI_KEY not set in .env"));
-
-        let postgrest_url: String =
-            dotenv::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
-
-        let db = Database::connect(postgrest_url).await?;
-
         Ok(Self {
             schema: Arc::new(Schema::new(
                 Query::default(),
                 Mutation::default(),
                 EmptySubscription,
             )),
-            db,
+            db: Database::connect(match test_database_url {
+                Some(url) => url,
+                None => SECRET_VARIABLES
+                    .database_url
+                    .clone()
+                    .expect("DATABASE_URL not set"),
+            })
+            .await?,
+            sendgrid_client: SGClient::new(&SECRET_VARIABLES.sendgrid_api_key),
         })
     }
 
@@ -90,13 +86,12 @@ impl App {
         event: Request,
     ) -> Result<async_graphql::Response, anyhow::Error> {
         let body = std::str::from_utf8(event.body())?;
-        let mut graphql_request =
-            serde_json::from_str::<async_graphql::Request>(body)?.data(self.db.clone());
+        let mut graphql_request = serde_json::from_str::<async_graphql::Request>(body)?
+            .data(self.db.clone())
+            .data(self.sendgrid_client.clone());
 
         match authenticate_request(&self.db, event).await {
-            Ok(Some(user)) => {
-                graphql_request = graphql_request.data(user);
-            }
+            Ok(Some((user, scopes))) => graphql_request = graphql_request.data(user).data(scopes),
             Ok(None) => {}
             Err(e) => {
                 return Ok(async_graphql::Response::from_errors(vec![

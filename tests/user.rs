@@ -4,11 +4,14 @@ mod shared;
 
 #[tokio::test]
 async fn can_get_me() -> Result<(), anyhow::Error> {
-    let email = shared::create_user().await?;
-    let token = shared::login_specific(&email).await?;
+    let shared_app = shared::SharedApp::init().await;
 
-    let response = shared::query(
-        r#"
+    let email = shared_app.create_user().await?;
+    let token = shared_app.login_specific(&email).await?;
+
+    let response = shared_app
+        .query(
+            r#"
         query {
             me {
                 id
@@ -22,9 +25,9 @@ async fn can_get_me() -> Result<(), anyhow::Error> {
             }
         }
     "#,
-        &token,
-    )
-    .await?;
+            &token,
+        )
+        .await?;
 
     assert_eq!(response["errors"], json!(null));
     assert_eq!(response["data"]["me"]["email"], json!(email));

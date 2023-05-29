@@ -3,8 +3,9 @@ use std::str::FromStr;
 use crate::{
     applications::{CitizenshipApplication, CitizenshipStatus},
     error::new_err,
+    guards::scope::ScopeGuard,
     schema::users,
-    util::stripe::get_stripe_client,
+    util::{stripe::get_stripe_client, variables::SECRET_VARIABLES},
 };
 use async_graphql::{ComplexObject, Context, Enum, SimpleObject};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -35,6 +36,7 @@ enum SubscriptionStatus {
 
 #[ComplexObject(rename_fields = "snake_case", rename_args = "snake_case")]
 impl User {
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:roles\")")]
     async fn roles(&self) -> Vec<String> {
         //TODO frontend wants an array of roles, so implement as an array
         match &self.role {
@@ -43,6 +45,7 @@ impl User {
         }
     }
 
+    #[graphql(guard = "ScopeGuard::new(\"profile:read:referral_count\")")]
     async fn referral_count(&self, ctx: &Context<'_>) -> async_graphql::Result<u64> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
@@ -54,6 +57,7 @@ impl User {
         Ok(count)
     }
 
+    #[graphql(guard = "ScopeGuard::new(\"citizenship:read:citizenship_status\")")]
     async fn citizenship_status(
         &self,
         ctx: &Context<'_>,
@@ -80,6 +84,7 @@ impl User {
         }
     }
 
+    #[graphql(guard = "ScopeGuard::new(\"billing\")")]
     async fn customer_portal_url(
         &self,
         ctx: &Context<'_>,
@@ -97,6 +102,7 @@ impl User {
         Ok(session.url)
     }
 
+    #[graphql(guard = "ScopeGuard::new(\"billing\")")]
     async fn stripe_subscription_info(
         &self,
         ctx: &Context<'_>,
@@ -108,9 +114,9 @@ impl User {
             &client,
             &stripe::ListSubscriptions {
                 customer: Some(stripe::CustomerId::from_str(&stripe_customer_id)?),
-                price: Some(PriceId::from_str(&dotenv::var(
-                    "LIGHT_UNIVERSITY_PRICE_ID",
-                )?)?),
+                price: Some(PriceId::from_str(
+                    &SECRET_VARIABLES.light_university_product_id,
+                )?),
                 ..Default::default()
             },
         )
@@ -145,6 +151,8 @@ impl User {
             }),
         }
     }
+
+    #[graphql(guard = "ScopeGuard::new(\"billing\")")]
     pub async fn stripe_customer_id(&self, ctx: &Context<'_>) -> async_graphql::Result<String> {
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
