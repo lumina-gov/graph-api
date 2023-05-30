@@ -45,10 +45,8 @@ impl UserQuery {
 
         for i in 0..count {
             let start = now - duration * i;
-            let end = now - duration * (i + 1);
 
             let count: u64 = users::Entity::find()
-                .filter(users::Column::Joined.gt(end))
                 .filter(users::Column::Joined.lt(start))
                 .count(conn)
                 .await?;
