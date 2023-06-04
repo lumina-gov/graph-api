@@ -17,10 +17,11 @@ jobs:
             override: true
             components: rustfmt, clippy
             target: aarch64-unknown-linux-gnu
-      - name: Install Zig toolchain
-        uses: korandoru/setup-zig@v1
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@v1
         with:
-          zig-version: 0.10.0
+          version: latest
+          platform: x64
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
