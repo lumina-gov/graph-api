@@ -38,7 +38,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
-        run: cargo lambda build --release --arm64
+        run: cargo lambda build --release --arm64 --compiler cargo
       - name: Test
         run: cargo test --release
 
