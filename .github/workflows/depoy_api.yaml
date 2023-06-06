@@ -22,7 +22,6 @@ jobs:
             toolchain: nightly
             override: true
             components: rustfmt, clippy
-            target: aarch64-unknown-linux-gnu
       - name: Test
         run: cargo test
         env:
