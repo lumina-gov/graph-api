@@ -44,10 +44,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
         # we need to install gcc-aarch64-linux-gnu
         # since we are compiling on x86_64 for aarch64 (arm64)
-      - name: Install aarch64-unknown-linux-gnu
+      - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
+
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -76,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bootstrap
-          path: target/lambda/graph-api
+          path: target/aarch64-unknown-linux-gnu/release/graph-api
 
 
   # =================
@@ -122,7 +124,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: bootstrap
-          path: target/lambda/graph-api
+          path: target/aarch64-unknown-linux-gnu/release/graph-api
 
       # we might want to zip here instead of deploying as a binary
       - name: Deploy
