@@ -1,0 +1,3 @@
+[target.aarch64-unknown-linux-gnu]
+# Since we are compiling on x86_64, we need to tell Rust to cross compile for aarch64
+linker = "aarch64-linux-gnu-gcc"
