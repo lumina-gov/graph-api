@@ -79,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: output
-          path: target/lambda/graph-api/bootstrap
+          path: target/lambda/graph-api
 
 
   # =================
@@ -118,14 +118,14 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - run: mkdir -p target/lambda/graph-api
+      # - run: mkdir -p target/lambda/graph-api
 
       # Download the binary from the build job
       - name: Download binary
         uses: actions/download-artifact@v2
         with:
           name: output
-          path: target/lambda/graph-api/bootstrap
+          path: target/lambda/graph-api
 
       # we might want to zip here instead of deploying as a binary
       - name: Deploy
