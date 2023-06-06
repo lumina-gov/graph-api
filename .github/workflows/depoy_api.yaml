@@ -40,6 +40,14 @@ jobs:
         run: cargo lambda build --release --arm64 --compiler cargo
       - name: Test
         run: cargo test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
+          LUMINA_APP_SECRET: ${{ secrets.LUMINA_APP_SECRET }}
       - name: Run database migration
         run: |
           atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
