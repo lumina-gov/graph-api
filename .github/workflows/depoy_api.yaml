@@ -50,12 +50,6 @@ jobs:
       - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
 
-      - name: Load Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-all-crates: true
-          cache-on-failure: true
-
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -70,6 +64,12 @@ jobs:
           crate: cargo-lambda
           version: "0.19"
 
+      - name: Load Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+          cache-on-failure: true
+
       - name: Build
         run: cargo lambda build --release --arm64 --compiler cargo
 
@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bootstrap
-          path: target/aarch64-unknown-linux-gnu/release/graph-api
+          path: target/lambda/graph-api
 
 
   # =================
@@ -124,7 +124,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: bootstrap
-          path: target/aarch64-unknown-linux-gnu/release/graph-api
+          path: target/lambda/graph-api
 
       # we might want to zip here instead of deploying as a binary
       - name: Deploy
