@@ -21,7 +21,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
             # We use stable because of the cache
-            # toolchain: nightly
+            toolchain: stable
             override: true
             components: rustfmt, clippy
       - name: Test
@@ -55,7 +55,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
             # We use stable because of the cache
-            # toolchain: nightly
+            toolchain: stable
             override: true
             components: rustfmt, clippy
             target: aarch64-unknown-linux-gnu
