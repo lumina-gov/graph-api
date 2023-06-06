@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v2
         continue-on-error: true
       - name: Install aarch64-unknown-linux-gnu
-        run: sudo apt-get update && apt-get install gcc-aarch64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Install atlas
