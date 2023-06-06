@@ -20,7 +20,8 @@ jobs:
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
+            # We use stable because of the cache
+            # toolchain: nightly
             override: true
             components: rustfmt, clippy
       - name: Test
@@ -50,10 +51,11 @@ jobs:
       - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
 
-      - name: Install latest nightly
+      - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
+            # We use stable because of the cache
+            # toolchain: nightly
             override: true
             components: rustfmt, clippy
             target: aarch64-unknown-linux-gnu
@@ -117,8 +119,6 @@ jobs:
           atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      # - run: mkdir -p target/lambda/graph-api
 
       # Download the binary from the build job
       - name: Download binary
