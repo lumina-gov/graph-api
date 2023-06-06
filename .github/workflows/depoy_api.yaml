@@ -67,6 +67,7 @@ jobs:
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          prefix-key: "v0-rust-build"
           cache-all-crates: true
           cache-on-failure: true
 
@@ -77,15 +78,8 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          name: bootstrap
-          path: target/lambda/graph-api
-
-      # list the files in the artifact
-      - name: List files
-        run: ls -l target/lambda
-      # list the files in the artifact
-      - name: List files
-        run: ls -l target/lambda/graph-api
+          name: output
+          path: target/lambda/graph-api/bootstrap
 
 
   # =================
@@ -130,8 +124,8 @@ jobs:
       - name: Download binary
         uses: actions/download-artifact@v2
         with:
-          name: bootstrap
-          path: target/lambda/graph-api
+          name: output
+          path: target/lambda/graph-api/bootstrap
 
       # we might want to zip here instead of deploying as a binary
       - name: Deploy
