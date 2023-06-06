@@ -80,6 +80,13 @@ jobs:
           name: bootstrap
           path: target/lambda/graph-api
 
+      # list the files in the artifact
+      - name: List files
+        run: ls -l target/lambda
+      # list the files in the artifact
+      - name: List files
+        run: ls -l target/lambda/graph-api
+
 
   # =================
   # Deploy the binary
