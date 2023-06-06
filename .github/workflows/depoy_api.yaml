@@ -45,7 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         # we need to install gcc-aarch64-linux-gnu
-        # since we are compiling on x86_64
+        # since we are compiling on x86_64 for aarch64 (arm64)
       - name: Install aarch64-unknown-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
@@ -113,6 +113,8 @@ jobs:
           atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - run: mkdir -p target/lambda/graph-api/bootstrap
 
       # Download the binary from the build job
       - name: Download binary
