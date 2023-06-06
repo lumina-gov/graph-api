@@ -10,6 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         continue-on-error: true
+        # we need to install gcc-aarch64-linux-gnu
+        # since we are compiling on x86_64
       - name: Install aarch64-unknown-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
@@ -24,24 +26,20 @@ jobs:
             override: true
             components: rustfmt, clippy
             target: aarch64-unknown-linux-gnu
-      # - name: Install Cross
-      #   run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
           version: "0.19"
-      - name: Run database migration
-        run: |
-          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
-        # run: cargo lambda build --release --arm64 --compiler cross
         run: cargo lambda build --release --arm64 --compiler cargo
-      # - name: Test
-      #   run: cargo test --release
-
+      - name: Test
+        run: cargo test
+      - name: Run database migration
+        run: |
+          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
       - name: Install AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
