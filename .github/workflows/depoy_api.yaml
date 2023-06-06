@@ -16,6 +16,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+          cache-on-failure: true
       - name: Install atlas
         run: |
           curl -sSf https://atlasgo.sh | sh
