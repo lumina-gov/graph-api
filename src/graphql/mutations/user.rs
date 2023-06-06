@@ -132,7 +132,7 @@ impl UserMutation {
                 tracing::info!("User created: {}", &user.email);
                 Ok(model.id)
             }
-            Err(DbErr::RecordNotInserted) => Err(new_err(
+            Err(DbErr::RecordNotFound(_)) => Err(new_err(
                 "USER_ALREADY_EXISTS",
                 &format!("User already exists: {}", &user.email),
             )),

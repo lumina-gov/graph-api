@@ -40,3 +40,64 @@ async fn can_get_me() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn duplicate_user_fails() -> Result<(), anyhow::Error> {
+    let shared_app = shared::SharedApp::init().await;
+    let email = "hello@123.com";
+
+    let res = shared_app
+        .query(
+            format!(
+                r#"
+            mutation {{
+                create_user(
+                    email: "{}",
+                    password: "password",
+                    first_name: "John",
+                    last_name: "Doe",
+                    calling_code: "1",
+                    country_code: "US",
+                    phone_number: "555-555-5555"
+                )
+            }}
+        "#,
+                email
+            )
+            .as_str(),
+            &None,
+        )
+        .await?;
+
+    assert_eq!(res["errors"], json!(null));
+
+    let res = shared_app
+        .query(
+            format!(
+                r#"
+            mutation {{
+                create_user(
+                    email: "{}",
+                    password: "password",
+                    first_name: "John",
+                    last_name: "Doe",
+                    calling_code: "1",
+                    country_code: "US",
+                    phone_number: "555-555-5555"
+                )
+            }}
+        "#,
+                email
+            )
+            .as_str(),
+            &None,
+        )
+        .await?;
+
+    assert_eq!(
+        res["errors"][0]["extensions"]["code"],
+        json!("USER_ALREADY_EXISTS")
+    );
+
+    Ok(())
+}
