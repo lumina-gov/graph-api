@@ -13,7 +13,7 @@ jobs:
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: "rust-testing"
+          prefix-key: "v0-rust-testing"
           cache-all-crates: true
           cache-on-failure: true
       - name: Install latest nightly
