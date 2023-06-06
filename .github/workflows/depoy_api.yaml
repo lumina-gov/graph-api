@@ -10,6 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         continue-on-error: true
+      - name: Install aarch64-unknown-linux-gnu
+        run: sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
       - name: Install atlas
@@ -35,7 +37,8 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
-        run: cargo lambda build --release --arm64 --compiler cross
+        # run: cargo lambda build --release --arm64 --compiler cross
+        run: cargo lambda build --release --arm64 --compiler cargo
       # - name: Test
       #   run: cargo test --release
 
