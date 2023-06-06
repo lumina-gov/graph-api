@@ -35,7 +35,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Build
-        run: cargo lambda build --arm64 --compiler cross # --release disabled for now
+        run: cargo lambda build --release --arm64 --compiler cross # --release disabled for now
       # - name: Test
       #   run: cargo test --release
 
