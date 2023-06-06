@@ -80,7 +80,7 @@ Respond in Pure JSON
 
         let response = openai::chat::ChatCompletion::builder(MODEL, [message])
             .create()
-            .await??;
+            .await?;
 
         let content = response.choices[0].message.content.clone();
 

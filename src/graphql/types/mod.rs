@@ -14,7 +14,7 @@ pub struct Void;
 impl ScalarType for Void {
     fn parse(value: Value) -> InputValueResult<Self> {
         Err(InputValueError::custom(
-            "you cannot just input void into the api",
+            "Void cannot be used as an input value",
         ))
     }
 

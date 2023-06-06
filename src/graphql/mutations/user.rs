@@ -78,7 +78,6 @@ impl UserMutation {
         ctx: &Context<'_>,
         scopes: Vec<String>,
     ) -> async_graphql::Result<String> {
-        let conn = ctx.data_unchecked::<DatabaseConnection>();
         let user = ctx.data_unchecked::<User>();
 
         // todo: ensure that the scopes the authenticated user/token is requesting

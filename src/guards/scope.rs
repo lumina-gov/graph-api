@@ -63,7 +63,7 @@ fn has_scope(scope_parts: &[&str], required_scope_parts: &[&str]) -> bool {
 
         // if the scope is None, but there is more required parts
         // then they have a more general scope
-        (None, Some(part)) => return true,
+        (None, Some(_part)) => return true,
         // if they have more scope parts, but no more required parts
         // then they have a more specific scope and we can return false
         (Some(_), None) => return false,

@@ -1,4 +1,3 @@
-use base64::engine::GeneralPurposeConfig;
 use lazy_static::lazy_static;
 use openai::set_key;
 
