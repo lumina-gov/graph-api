@@ -2,26 +2,20 @@ name: deploy_api
 on: push
 
 jobs:
-  deploy:
+  # ===============
+  # Test the binary
+  # ===============
+  test:
     runs-on: ubuntu-latest
-    # choose production if branch is main
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        continue-on-error: true
-        # we need to install gcc-aarch64-linux-gnu
-        # since we are compiling on x86_64
-      - name: Install aarch64-unknown-linux-gnu
-        run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          prefix-key: "rust-testing"
           cache-all-crates: true
           cache-on-failure: true
-      - name: Install atlas
-        run: |
-          curl -sSf https://atlasgo.sh | sh
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -29,13 +23,6 @@ jobs:
             override: true
             components: rustfmt, clippy
             target: aarch64-unknown-linux-gnu
-      - name: Install Cargo Lambda
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-lambda
-          version: "0.19"
-      - name: Build
-        run: cargo lambda build --release --arm64 --compiler cargo
       - name: Test
         run: cargo test
         env:
@@ -46,20 +33,95 @@ jobs:
           PRODUCTION: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
           LUMINA_APP_SECRET: ${{ secrets.LUMINA_APP_SECRET }}
-      - name: Run database migration
+
+  # ================
+  # Build the binary
+  # ================
+  build:
+    runs-on: ubuntu-latest
+    # choose production if branch is main
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        # we need to install gcc-aarch64-linux-gnu
+        # since we are compiling on x86_64
+      - name: Install aarch64-unknown-linux-gnu
+        run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
+      - name: Load Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+          cache-on-failure: true
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: rustfmt, clippy
+            target: aarch64-unknown-linux-gnu
+
+      - name: Install Cargo Lambda
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-lambda
+          version: "0.19"
+
+      - name: Build
+        run: cargo lambda build --release --arm64 --compiler cargo
+
+      # Transfer the binary to the deploy job
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: bootstrap
+          path: target/lambda/graph-api/bootstrap
+
+
+  # =================
+  # Deploy the binary
+  # =================
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install atlas
         run: |
-          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          curl -sSf https://atlasgo.sh | sh
+
+      - name: Install Cargo Lambda
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-lambda
+          version: "0.19"
+
       - name: Install AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-1
-        # we might want to zip here instead of deploying as a binary
-      - name: lambda-version
-        run: cargo lambda --version
+
+      - name: Run database migration
+        run: |
+          atlas schema apply -u $DATABASE_URL --to file://schema.sql --dev-url "docker://postgres/15/test" --auto-approve
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Download the binary from the build job
+      - name: Download binary
+        uses: actions/download-artifact@v2
+        with:
+          name: bootstrap
+          path: target/lambda/graph-api/bootstrap
+
+      # we might want to zip here instead of deploying as a binary
       - name: Deploy
         run: |
           cargo lambda deploy \
