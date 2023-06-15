@@ -49,8 +49,11 @@ jobs:
       # - name: Install crosstool-ng
       #   run: sudo apt-get update && sudo apt-get install crosstool-ng
 
-      - name: Install Lambda with Zig
-        run: brew tap cargo-lambda/cargo-lambda && brew install cargo-lambda
+      - name: Install Cargo Lambda
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-lambda
+          version: "0.19"
 
       #   # we need to install gcc-aarch64-linux-gnu
       #   # since we are compiling on x86_64 for aarch64 (arm64)
@@ -112,14 +115,11 @@ jobs:
         run: |
           curl -sSf https://atlasgo.sh | sh
 
-      - name: Install Lambda with Zig
-        run: brew tap cargo-lambda/cargo-lambda && brew install cargo-lambda
-
-      # - name: Install Cargo Lambda
-      #   uses: baptiste0928/cargo-install@v1
-      #   with:
-      #     crate: cargo-lambda
-      #     version: "0.19"
+      - name: Install Cargo Lambda
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-lambda
+          version: "0.19"
 
       - name: Install AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
