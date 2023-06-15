@@ -57,8 +57,8 @@ jobs:
           crate: cargo-lambda
           version: "0.19"
 
-      #   # we need to install gcc-aarch64-linux-gnu
-      #   # since we are compiling on x86_64 for aarch64 (arm64)
+      # we need to install gcc-aarch64-linux-gnu
+      # since we are compiling on x86_64 for aarch64 (arm64)
       - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       #   # glibc is needed for the aarch64 target
@@ -92,7 +92,7 @@ jobs:
 
 
       - name: Build
-        run: cargo lambda build --release --arm64 --compiler cargo
+        run: cargo lambda build --release --target aarch64-unknown-linux-musl  --compiler cargo
 
       # Transfer the binary to the deploy job
       - name: Upload binary
