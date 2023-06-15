@@ -49,10 +49,7 @@ jobs:
       # - name: Install crosstool-ng
       #   run: sudo apt-get update && sudo apt-get install crosstool-ng
 
-      # - name: configure ct
-      #   run: ct-ng
-
-      # - uses: goto-bus-stop/setup-zig@v2
+      - uses: goto-bus-stop/setup-zig@v2
 
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
@@ -62,8 +59,8 @@ jobs:
 
       #   # we need to install gcc-aarch64-linux-gnu
       #   # since we are compiling on x86_64 for aarch64 (arm64)
-      - name: Install gcc-aarch64-linux-gnu
-        run: sudo apt-get update && sudo apt-get install gcc8-aarch64-linux-gnu
+      # - name: Install gcc-aarch64-linux-gnu
+      #   run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
       #   # glibc is needed for the aarch64 target
       # - name: Install glibc
       #   # run: sudo apt-get install libc6-dev-arm64-cross
@@ -91,8 +88,9 @@ jobs:
       #     crate: cargo-lambda
       #     version: "0.19"
 
+
       - name: Build
-        run: cargo lambda build --release --arm64 --compiler cargo
+        run: cargo lambda build --release --arm64 # --compiler cargo
 
       # Transfer the binary to the deploy job
       - name: Upload binary
