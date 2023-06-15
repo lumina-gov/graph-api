@@ -50,6 +50,11 @@ jobs:
         # since we are compiling on x86_64 for aarch64 (arm64)
       - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
+        # glibc is needed for the aarch64 target
+      - name: Install glibc
+        # run: sudo apt-get install libc6-dev-arm64-cross
+        run: sudo apt-get install libc6-dev
+
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
