@@ -49,7 +49,7 @@ jobs:
       # - name: Install crosstool-ng
       #   run: sudo apt-get update && sudo apt-get install crosstool-ng
 
-      - uses: goto-bus-stop/setup-zig@v2
+      # - uses: goto-bus-stop/setup-zig@v2
 
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
@@ -80,7 +80,9 @@ jobs:
             toolchain: stable
             override: true
             components: rustfmt, clippy
-            target: aarch64-unknown-linux-gnu
+            # target: aarch64-unknown-linux-gnu
+            # musl
+            target: aarch64-unknown-linux-musl
 
       # - name: Install Cargo Lambda
       #   uses: baptiste0928/cargo-install@v1
@@ -90,7 +92,7 @@ jobs:
 
 
       - name: Build
-        run: cargo lambda build --release --arm64 # --compiler cargo
+        run: cargo lambda build --release --arm64 --compiler cargo
 
       # Transfer the binary to the deploy job
       - name: Upload binary
