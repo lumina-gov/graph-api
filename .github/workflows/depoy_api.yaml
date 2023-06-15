@@ -49,6 +49,10 @@ jobs:
       # - name: Install crosstool-ng
       #   run: sudo apt-get update && sudo apt-get install crosstool-ng
 
+      - uses: goto-bus-stop/setup-zig@v2
+
+      - run: zig build test
+
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
