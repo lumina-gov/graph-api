@@ -2,5 +2,5 @@
 # Since we are compiling on x86_64 on github actions
 # we need to tell Rust to cross compile for aarch64
 # The github actions should install the gcc-aarch64-linux-gnu package
-linker = "aarch64-linux-gnu-gcc"
+# linker = "aarch64-linux-gnu-gcc"
 # linker = "aarch64-unknown-linux-musl"
