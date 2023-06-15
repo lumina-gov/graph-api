@@ -85,7 +85,7 @@ jobs:
           cache-on-failure: true
 
       - name: Build
-        run: cargo lambda build --release --arm64 --compiler cargo
+        run: cargo lambda build --release --arm64 # --compiler cargo
 
       # Transfer the binary to the deploy job
       - name: Upload binary
