@@ -46,25 +46,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # - name: Install crosstool-ng
-      #   run: sudo apt-get update && sudo apt-get install crosstool-ng
-
-      # - uses: goto-bus-stop/setup-zig@v2
+      - uses: goto-bus-stop/setup-zig@v2
 
       - name: Install Cargo Lambda
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cargo-lambda
           version: "0.19"
-
-      # we need to install gcc-aarch64-linux-gnu
-      # since we are compiling on x86_64 for aarch64 (arm64)
-      - name: Install gcc-aarch64-linux-gnu
-        run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu
-      #   # glibc is needed for the aarch64 target
-      # - name: Install glibc
-      #   # run: sudo apt-get install libc6-dev-arm64-cross
-      #   run: sudo apt-get install libc6-dev
 
       - name: Load Rust cache
         uses: Swatinem/rust-cache@v2
@@ -80,19 +68,10 @@ jobs:
             toolchain: stable
             override: true
             components: rustfmt, clippy
-            # target: aarch64-unknown-linux-gnu
-            # musl
-            target: aarch64-unknown-linux-musl
-
-      # - name: Install Cargo Lambda
-      #   uses: baptiste0928/cargo-install@v1
-      #   with:
-      #     crate: cargo-lambda
-      #     version: "0.19"
-
+            target: aarch64-unknown-linux-gnu
 
       - name: Build
-        run: cargo lambda build --release --target aarch64-unknown-linux-musl  --compiler cargo
+        run: cargo lambda build --release --target aarch64-unknown-linux-gnu --compiler cargo
 
       # Transfer the binary to the deploy job
       - name: Upload binary
