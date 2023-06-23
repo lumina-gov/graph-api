@@ -21,7 +21,11 @@ jsonwebtoken = "8.2.0"
 bcrypt = "0.14.0"
 zxcvbn = "2.2.1"
 async-stripe = { version = "0.21.0", features = ["runtime-tokio-hyper-rustls-webpki"] }
-openai = {version = "1.0.0-alpha.8", features = ["rustls"], default-features = false }
+
+# switch to this when openai crate supports function calling https://github.com/rellfy/openai/pull/10
+# openai = {version = "1.0.0-alpha.8", features = ["rustls"], default-features = false }
+openai = { git = "https://github.com/AlbertMarashi/openai.git", features = ["rustls"], default-features = false }
+
 slug = "0.1.4"
 async-graphql = { version = "5.0.7", features = ["uuid", "chrono"] }
 sea-orm = { version = "^0", features= [

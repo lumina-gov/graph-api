@@ -1,12 +1,14 @@
 use async_graphql::{Context, Object};
 use chrono::Utc;
-use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
+use openai::chat::{
+    ChatCompletionFunctionDefinition, ChatCompletionMessage, ChatCompletionMessageRole,
+};
 use sea_orm::{sea_query::OnConflict, DatabaseConnection, EntityTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    error::new_err_with_detail,
+    error::new_err,
     graphql::types::{
         question_assessment::{
             QuestionAssessment, QuestionAssessmentActiveModel, QuestionAssessmentColumn,
@@ -18,7 +20,7 @@ use crate::{
     schema::sea_orm_active_enums::Assessment,
 };
 
-const MODEL: &str = "gpt-3.5-turbo";
+const MODEL: &str = "gpt-3.5-turbo-0613";
 
 #[derive(Default)]
 pub struct QuestionAssessmentMutation;
@@ -39,67 +41,92 @@ impl QuestionAssessmentMutation {
         let user = ctx.data_unchecked::<User>();
         let conn = ctx.data_unchecked::<DatabaseConnection>();
 
-        let message = ChatCompletionMessage {
-            content: format!(
-                r#"
-Assess the user's response, and provide feedback and corrections if necessary.
-If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
+        let messages = [
+            ChatCompletionMessage {
+                content: Some(format!(
+                    r#"
+- Assess the user's response/answer, and provide feedback and corrections in the function call feedback parameter.
+- If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
+- Be strict and fail if the answer is not sufficient.
+- Use 'UNKNOWN' if the user did not answer the question.
+- Feedback can contain any markdown formatting (e.g. **bold**, *italics*, `code`, etc)
 
-type HumanString = string
-type Response = {{
-    feedback: HumanString
-    assessment: Assessment
-}}
-type Assessment = "PASS" | "SOFT_PASS" | "FAIL" | "UNKNOWN"
+Course Slug: {}
+Unit Slug: {}
 
-Course Slug: "{}"
-Unit Slug: "{}"
-Question:
+Question
 {}
-{}
-User Answer:
-{}
-<END USER ANSWER>
 
-Respond in Pure JSON
----
-{{
-    "feedback": ""#,
-                course_slug,
-                unit_slug,
-                question,
-                match question_context {
-                    Some(question_context) => format!("Context\n{}", question_context),
-                    None => String::new(),
+{}"#,
+                    course_slug,
+                    unit_slug,
+                    question,
+                    match question_context {
+                        Some(question_context) =>
+                            format!("Additional Context\n{}", question_context),
+                        None => String::new(),
+                    },
+                )),
+                name: None,
+                role: ChatCompletionMessageRole::System,
+                function_call: None,
+            },
+            ChatCompletionMessage {
+                content: Some(answer.clone()),
+                name: None,
+                role: ChatCompletionMessageRole::User,
+                function_call: None,
+            },
+        ];
+
+        let response = openai::chat::ChatCompletion::builder(MODEL, messages)
+            .functions([
+                ChatCompletionFunctionDefinition {
+                    name: "ai_assessment".into(),
+                    description: Some("Write an AI teacher assessment of the user's answer to a given question".into()),
+                    parameters: Some(serde_json::json!({
+                        "type": "object",
+                        "properties": {
+                            "feedback": {
+                                "type": "string",
+                                "description": "AI assessment of the the user's response\nprovide feedback and corrections as markdown string"
+                            },
+                            "assessment": {
+                                "type": "string",
+                                "enum": ["PASS", "SOFT_PASS", "FAIL", "UNKNOWN"],
+                                "description": "Did the user accurately answer the question?"
+                            }
+                        },
+                        "required": ["assessment", "feedback"]
+                    })),
                 },
-                answer,
-            ),
-            name: Some(slug::slugify(&user.first_name)),
-            role: ChatCompletionMessageRole::User,
-        };
-
-        let response = openai::chat::ChatCompletion::builder(MODEL, [message])
+            ])
+            .user(slug::slugify(&user.first_name))
             .create()
             .await?;
 
-        let content = response.choices[0].message.content.clone();
+        let reply = &response.choices[0].message;
 
-        let json_string: String = format!(r#"{{ "feedback": "{}"#, content);
+        let function_call = reply.function_call.as_ref().ok_or_else(|| {
+            new_err(
+                "MISSING_FUNCTION_CALL",
+                "OpenAI did not return a function call in the response",
+            )
+        })?;
 
-        #[derive(Debug, Deserialize)]
+        #[derive(Deserialize)]
         struct PartialAssessment {
             feedback: String,
             assessment: Assessment,
         }
 
-        let partial_assessment: PartialAssessment = match serde_json::from_str(&json_string) {
-            Ok(partial_assessment) => partial_assessment,
-            Err(err) => Err(new_err_with_detail(
-                "FAILED_DESERIALIZATION",
-                "Failed to deserialize AI response. Please try again.",
-                &err.to_string(),
-            ))?,
-        };
+        let partial_assessment =
+            serde_json::from_str::<PartialAssessment>(&function_call.arguments).map_err(|_| {
+                new_err(
+                    "INVALID_ARGUMENTS",
+                    "Failed to parse function call parameters from OpenAI",
+                )
+            })?;
 
         let assessment: QuestionAssessmentActiveModel = QuestionAssessment {
             id: Uuid::new_v4(),
