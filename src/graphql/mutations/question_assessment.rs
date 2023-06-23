@@ -50,6 +50,7 @@ impl QuestionAssessmentMutation {
 - Be strict and fail if the answer is not sufficient.
 - Use 'UNKNOWN' if the user did not answer the question.
 - Feedback can contain any markdown formatting (e.g. **bold**, *italics*, `code`, etc)
+- Always return the assessment function call
 
 Course Slug: {}
 Unit Slug: {}
@@ -101,6 +102,9 @@ Question
                     })),
                 },
             ])
+            .function_call(serde_json::json!({
+                "name": "ai_assessment"
+            }))
             .user(slug::slugify(&user.first_name))
             .create()
             .await?;
