@@ -49,6 +49,7 @@ impl QuestionAssessmentMutation {
 - If the answer is a SOFT_PASS or FAIL, explain how the answer can be improved.
 - Be strict and fail if the answer is not sufficient.
 - Use 'UNKNOWN' if the user did not answer the question.
+- Always provide constructive feedback.
 - Feedback can contain any markdown formatting (e.g. **bold**, *italics*, `code`, etc)
 - Always return the assessment function call
 
