@@ -51,7 +51,7 @@ impl QuestionAssessmentMutation {
 - Use 'UNKNOWN' if the user did not answer the question.
 - Always provide constructive feedback.
 - Feedback can contain any markdown formatting (e.g. **bold**, *italics*, `code`, etc)
-- Always return the assessment function call
+- ALWAYS return the assessment function call with all parameters, even if the answer is UNKNOWN.
 
 Course Slug: {}
 Unit Slug: {}
