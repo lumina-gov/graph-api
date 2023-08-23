@@ -20,7 +20,7 @@ use crate::{
     schema::sea_orm_active_enums::Assessment,
 };
 
-const MODEL: &str = "gpt-3.5-turbo-0613";
+const MODEL: &str = "gpt-4-0613";
 
 #[derive(Default)]
 pub struct QuestionAssessmentMutation;
